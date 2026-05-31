@@ -164,8 +164,8 @@ def halaman_bayesian():
     # ==========================================
     # KONTEN UTAMA HALAMAN BAYESIAN
     # ==========================================
-    st.markdown("<h1 style='font-size: 4rem; margin-bottom: 0;'>Multilevel Bayesian Regression</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #6b7280; font-size: 1.2rem; margin-bottom: 2rem;'>Dashboard ini merupakan hasil dari model <b><i>Bayesian Multilevel Logistic Regression</i></b> untuk prediksi Status Ketahanan Pangan Kabupaten/Kota di Indonesia tahun 2024.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='font-size: 2.5rem; margin-bottom: 0;'>Multilevel Bayesian Regression</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; font-size: 1.0rem; margin-bottom: 2rem;'>Dashboard ini merupakan hasil dari model <b><i>Bayesian Multilevel Logistic Regression</i></b> untuk prediksi Status Ketahanan Pangan Kabupaten/Kota di Indonesia tahun 2024.</p>", unsafe_allow_html=True)
 
     def render_custom_metric(col, label, var_name, is_inverse=False, is_absolute=False):
         if var_name not in df_clean.columns: return
