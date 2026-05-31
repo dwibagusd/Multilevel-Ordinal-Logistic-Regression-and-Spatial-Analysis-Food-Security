@@ -1,0 +1,390 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import json
+import plotly.express as px
+import libpysal as lps
+from esda.moran import Moran, Moran_Local
+import warnings
+
+# Mengabaikan warning dari pysal
+warnings.filterwarnings("ignore", category=UserWarning, message="The weights matrix is not fully connected")
+
+# -----------------------------------------------------------------------------
+# 1. KONFIGURASI HALAMAN & STYLE (CSS INJECTION)
+# -----------------------------------------------------------------------------
+st.set_page_config(
+    page_title="Dashboard Ketahanan Pangan",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+st.markdown("""
+<style>
+    .metric-card {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin-bottom: 16px;
+        font-family: 'Inter', sans-serif;
+    }
+    .metric-title { color: #6b7280; font-size: 0.9rem; font-weight: 500; margin-bottom: 10px; }
+    .metric-value { font-size: 2.2rem; font-weight: 700; color: #111827; margin-bottom: 12px; }
+    .metric-delta { font-size: 0.85rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+    .delta-positive { background-color: #dcfce7; color: #166534; }
+    .delta-negative { background-color: #fee2e2; color: #991b1b; }
+    .delta-neutral { background-color: #f3f4f6; color: #374151; }
+    [data-testid="stSidebar"] { color: #f8fafc; }
+    .streamlit-expanderHeader { color: #f8fafc !important; }
+</style>
+""", unsafe_allow_html=True)
+
+# URL GeoJSON & Nama File CSV
+URL_GEOJSON = "https://raw.githubusercontent.com/dwibagusd/Multilevel-Ordinal-Logistic-Regression-and-Spatial-Analysis-Food-Security/refs/heads/main/Data/peta_indonesia_comp.json"
+CSV_FILENAME = "data_ringan.csv"
+MATRIKS_FILENAME = "matriks_bobot_penuh.csv"
+
+# -----------------------------------------------------------------------------
+# 2. LOAD DATA (CACHE)
+# -----------------------------------------------------------------------------
+@st.cache_data
+def load_tabular_data(file_path):
+    return pd.read_csv(file_path)
+
+@st.cache_data
+def load_spatial_weights(file_path):
+    df_matriks = pd.read_csv(file_path, index_col=0)
+    w = lps.weights.full2W(df_matriks.values, ids=df_matriks.index.tolist())
+    w.transform = 'r' 
+    return w
+
+@st.cache_data
+def load_pymc_weights(json_path):
+    with open(json_path, "r") as f:
+        return json.load(f)
+
+try:
+    df_clean = load_tabular_data(CSV_FILENAME)
+    w_spasial = load_spatial_weights(MATRIKS_FILENAME)
+    weights = load_pymc_weights("model_weights.json")
+except FileNotFoundError as e:
+    st.error(f"⚠️ File tidak ditemukan: {e.filename}")
+    st.stop()
+
+# Menyiapkan fungsi prediksi Prediksi PyMC yang akan dipakai di halaman Bayesian
+def predict_ordinal_probs_pymc(df_input, w, df_asli):
+    x_beta = 0
+    for col, coef in w["beta"].items():
+        if col in df_input.columns:
+            mean_val = df_asli[col].mean()
+            std_val = df_asli[col].std()
+            if std_val == 0: std_val = 1e-9 
+            nilai_z = (df_input[col] - mean_val) / std_val
+            x_beta += nilai_z * coef
+            
+    mean_z = df_asli["anggaran_bansos"].mean()
+    std_z = df_asli["anggaran_bansos"].std()
+    if std_z == 0: std_z = 1e-9
+    
+    nilai_z_bansos = (df_input["anggaran_bansos"] - mean_z) / std_z
+    gamma_z = nilai_z_bansos * w["gamma"]
+    
+    u_prov = df_input["provinsi"].map(w["u_provinsi"]).fillna(0.0)
+    eta = x_beta + gamma_z + u_prov
+    
+    cutpoints = w["cutpoints"]
+    prob_cat0 = 1 / (1 + np.exp(-(cutpoints[0] - eta)))
+    prob_cat_0_1 = 1 / (1 + np.exp(-(cutpoints[1] - eta)))
+    
+    probs = np.column_stack([prob_cat0, prob_cat_0_1 - prob_cat0, 1.0 - prob_cat_0_1])
+    return np.argmax(probs, axis=1)
+
+# Inisialisasi Session State
+kunci_slider_float = ["sim_bansos"]
+kunci_slider_int = ["sim_ncpr", "sim_pengeluaran_pangan", "sim_kemiskinan", "sim_stunting", "sim_harapan_hidup", "sim_tanpa_listrik", "sim_tanpa_air_bersih", "sim_tenaga_kesehatan", "sim_lama_sekolah_perempuan"]
+for key in kunci_slider_float:
+    if key not in st.session_state: st.session_state[key] = 0.0
+for key in kunci_slider_int:
+    if key not in st.session_state: st.session_state[key] = 0
+def reset_simulasi():
+    for key in kunci_slider_float: st.session_state[key] = 0.0
+    for key in kunci_slider_int: st.session_state[key] = 0
+
+
+# -----------------------------------------------------------------------------
+# 3. FUNGSI HALAMAN 1: BAYESIAN MULTILEVEL
+# -----------------------------------------------------------------------------
+def halaman_bayesian():
+    # ==========================================
+    # SIDEBAR KHUSUS HALAMAN BAYESIAN
+    # ==========================================
+    st.sidebar.subheader(":material/filter_alt: Simulasi What-If")
+
+    # Mengelompokkan Sliders
+    with st.sidebar.expander("Level 1 (Kabupaten/Kota)", expanded=True):
+        sim_ncpr = st.slider("NCPR (%)", -50, 50, 0, key="sim_ncpr", step=5)
+        sim_pengeluaran_pangan = st.slider("Pengeluaran Pangan (%)", -50, 50, 0, key="sim_pengeluaran_pangan", step=5)
+        sim_kemiskinan = st.slider("Kemiskinan (%)", -50, 50, 0, key="sim_kemiskinan", step=5)
+        sim_stunting = st.slider("Stunting (%)", -50, 50, 0, key="sim_stunting", step=5)
+        sim_harapan_hidup = st.slider("Harapan Hidup (%)", -10, 10, 0, key="sim_harapan_hidup", step=1)
+        sim_tanpa_listrik = st.slider("Tanpa Listrik (%)", -50, 50, 0, key="sim_tanpa_listrik", step=5)
+        sim_tanpa_air_bersih = st.slider("Tanpa Air Bersih (%)", -50, 50, 0, key="sim_tanpa_air_bersih", step=5)
+        sim_tenaga_kesehatan = st.slider("Tenaga Kesehatan (%)", -50, 50, 0, key="sim_tenaga_kesehatan", step=5)
+        sim_lama_sekolah_perempuan = st.slider("Lama Sekolah Perempuan (%)", -30, 30, 0, key="sim_lama_sekolah_perempuan", step=5)
+
+    with st.sidebar.expander("Level 2 (Provinsi)", expanded=True):
+        sim_bansos = st.slider("Bansos (Z-Score Absolute)", -2.0, 2.0, 0.0, key="sim_bansos", step=0.1)
+
+    # Menerapkan rumus perubahan interaktif dengan perlindungan batas (clipping)
+    df_sim = df_clean.copy()
+    df_sim["ncpr"] = (df_clean["ncpr"] * (1 + sim_ncpr / 100)).clip(lower=0)
+    df_sim["pengeluaran_pangan"] = (df_clean["pengeluaran_pangan"] * (1 + sim_pengeluaran_pangan / 100)).clip(0, 100)
+    df_sim["kemiskinan"] = (df_clean["kemiskinan"] * (1 + sim_kemiskinan / 100)).clip(0, 100)
+    df_sim["stunting"] = (df_clean["stunting"] * (1 + sim_stunting / 100)).clip(0, 100)
+    df_sim["tanpa_listrik"] = (df_clean["tanpa_listrik"] * (1 + sim_tanpa_listrik / 100)).clip(0, 100)
+    df_sim["tanpa_air_bersih"] = (df_clean["tanpa_air_bersih"] * (1 + sim_tanpa_air_bersih / 100)).clip(0, 100)
+    df_sim["harapan_hidup"] = (df_clean["harapan_hidup"] * (1 + sim_harapan_hidup / 100)).clip(0, 100) 
+    df_sim["lama_sekolah_perempuan"] = (df_clean["lama_sekolah_perempuan"] * (1 + sim_lama_sekolah_perempuan / 100)).clip(0, 18) 
+    df_sim["tenaga_kesehatan"] = (df_clean["tenaga_kesehatan"] * (1 + sim_tenaga_kesehatan / 100)).clip(lower=0)
+    df_sim["anggaran_bansos"] = df_clean["anggaran_bansos"] + sim_bansos
+
+    st.sidebar.button("Reset", on_click=reset_simulasi, width='stretch')
+
+    pred_awal = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
+    pred_sim = predict_ordinal_probs_pymc(df_sim, weights, df_clean)
+
+    df_clean["predik_label"] = pred_awal
+    df_sim["predik_label"] = pred_sim
+    
+    status_map = {0: "Rentan", 1: "Tahan", 2: "Sangat Tahan"}
+    df_sim["status_ketahanan"] = df_sim["predik_label"].map(status_map)
+
+    # ==========================================
+    # KONTEN UTAMA HALAMAN BAYESIAN
+    # ==========================================
+    st.markdown("<h1 style='font-size: 4rem; margin-bottom: 0;'>Multilevel Bayesian Regression</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; font-size: 1.2rem; margin-bottom: 2rem;'>Dashboard ini merupakan hasil dari model <b><i>Bayesian Multilevel Logistic Regression</i></b> untuk prediksi Status Ketahanan Pangan Kabupaten/Kota di Indonesia tahun 2024.</p>", unsafe_allow_html=True)
+
+    def render_custom_metric(col, label, var_name, is_inverse=False, is_absolute=False):
+        if var_name not in df_clean.columns: return
+        val_awal = df_clean[var_name].mean()
+        val_sim = df_sim[var_name].mean()
+        delta = val_sim - val_awal
+        
+        formatted_val = f"{val_sim:.2f}"
+        if is_absolute:
+            delta_str = f"{abs(delta):.2f} Poin"
+        else:
+            pct_change = (delta/val_awal)*100 if val_awal != 0 else 0
+            delta_str = f"{abs(pct_change):.1f}%"
+        
+        if delta > 0.001:
+            arrow = "↑"
+            delta_class = "delta-negative" if is_inverse else "delta-positive"
+        elif delta < -0.001:
+            arrow = "↓"
+            delta_class = "delta-positive" if is_inverse else "delta-negative"
+        else:
+            arrow = "→"
+            delta_class = "delta-neutral"
+            delta_str = "0.0%" if not is_absolute else "0.00 Poin"
+
+        html_content = f"""
+        <div class="metric-card">
+            <div class="metric-title">{label}</div>
+            <div class="metric-value">{formatted_val}</div>
+            <div class="metric-delta {delta_class}">{arrow} {delta_str}</div>
+        </div>
+        """
+        col.markdown(html_content, unsafe_allow_html=True)
+
+    col_x1, col_x2, col_x3, col_x4, col_x5 = st.columns(5)
+    render_custom_metric(col_x1, "NCPR", "ncpr")
+    render_custom_metric(col_x2, "Kemiskinan", "kemiskinan", is_inverse=True)
+    render_custom_metric(col_x3, "Pengeluaran Pangan", "pengeluaran_pangan")
+    render_custom_metric(col_x4, "Tanpa Listrik", "tanpa_listrik", is_inverse=True)
+    render_custom_metric(col_x5, "Tanpa Air Bersih", "tanpa_air_bersih", is_inverse=True)
+    
+    col_x6, col_x7, col_x8, col_x9, col_x10 = st.columns(5)
+    render_custom_metric(col_x6, "Lama Sekolah (Pr)", "lama_sekolah_perempuan")
+    render_custom_metric(col_x7, "Tenaga Kesehatan", "tenaga_kesehatan")
+    render_custom_metric(col_x8, "Harapan Hidup", "harapan_hidup")
+    render_custom_metric(col_x9, "Stunting", "stunting", is_inverse=True)
+    render_custom_metric(col_x10, "Bansos (Z-Score)", "anggaran_bansos", is_absolute=True)
+
+    # st.write("---")
+    
+    rentan_awal = (pred_awal == 0).sum()
+    rentan_sim = (pred_sim == 0).sum()
+    tahan_awal = (pred_awal == 2).sum()
+    tahan_sim = (pred_sim == 2).sum()
+    total_wilayah = len(df_clean)
+
+    if rentan_sim < rentan_awal:
+        pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
+    elif rentan_sim > rentan_awal:
+        pesan_rentan = f"⚠️ Waspada! Terdapat **{rentan_sim - rentan_awal} daerah baru** jatuh ke zona Rentan."
+    else:
+        pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
+
+    st.info(f"""
+    💡 **Dampak Kebijakan Nasional:**
+    * {pesan_rentan}
+    * Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.
+    """)
+
+    st.markdown("### Visualisasi & Eksplorasi Spasial")
+    
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        provinsi_terpilih = st.multiselect("Filter Provinsi:", options=sorted(df_sim["provinsi"].unique()), key="prov_bayes", placeholder="Pilih Provinsi...")
+    with col_f2:
+        label_terpilih = st.multiselect("Filter Status Ketahanan:", options=list(status_map.values()), key="label_bayes", placeholder="Pilih Status...")
+        
+    df_filtered_bayes = df_sim.copy()
+    if provinsi_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["provinsi"].isin(provinsi_terpilih)]
+    if label_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["status_ketahanan"].isin(label_terpilih)]
+    if df_filtered_bayes.empty:
+        st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
+    else:
+        fig_map = px.choropleth_map(
+            df_filtered_bayes, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+            color="status_ketahanan", color_discrete_map={"Rentan": "#dc2626", "Tahan": "#fde047", "Sangat Tahan": "#16a34a"},
+            map_style="basic", zoom=4, center={"lat": -2.5, "lon": 118}, opacity=0.8,
+            hover_name="kab_kota", hover_data=["provinsi", "kemiskinan"] if "kemiskinan" in df_filtered_bayes.columns else ["provinsi"],
+            height=500
+        )
+        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_map, width='stretch')
+
+    st.subheader("Raw Data")
+    kolom_penting = ["kab_kota", "provinsi", "status_ketahanan", "ncpr", "kemiskinan", "pengeluaran_pangan", "stunting"]
+    st.dataframe(df_filtered_bayes[kolom_penting], width='stretch', hide_index=True)
+
+
+# -----------------------------------------------------------------------------
+# 4. FUNGSI HALAMAN 2: SPATIAL AUTOCORRELATION
+# -----------------------------------------------------------------------------
+def halaman_spasial():
+    # Menggunakan df_clean karena analisis spasial menggunakan IKP murni (tidak terpengaruh What-If slider)
+    df_spasial = df_clean.copy()
+    
+    if 'ikp' not in df_spasial.columns:
+        st.error("Variabel 'ikp' tidak ditemukan di dataset.")
+        st.stop()
+        
+    y_spasial = df_spasial['ikp'].values
+    moran = Moran(y_spasial, w_spasial)
+    moran_loc = Moran_Local(y_spasial, w_spasial)
+
+    # Identifikasi Kluster Spasial
+    signifikan = moran_loc.p_sim < 0.05
+    kuadran = moran_loc.q
+    
+    df_spasial['cluster_label'] = 'Tidak Signifikan (ns)'
+    df_spasial.loc[signifikan & (kuadran == 1), 'cluster_label'] = 'HH (Hotspot)'
+    df_spasial.loc[signifikan & (kuadran == 3), 'cluster_label'] = 'LL (Coldspot)'
+    df_spasial.loc[signifikan & (kuadran == 4), 'cluster_label'] = 'HL (Outlier)'
+    df_spasial.loc[signifikan & (kuadran == 2), 'cluster_label'] = 'LH (Outlier)'
+
+    # ==========================================
+    # SIDEBAR KHUSUS HALAMAN SPASIAL
+    # ==========================================
+    # Kita pindahkan filter spasial ke sidebar agar konten utama lebih bersih!
+    st.sidebar.markdown("### :material/filter_alt: Filter Area Spasial")
+    provinsi_terpilih_spasial = st.sidebar.multiselect("Pilih Provinsi:", options=sorted(df_spasial["provinsi"].unique()), key="prov_spasial", placeholder="Semua Provinsi")
+    kluster_terpilih = st.sidebar.multiselect("Pilih Kluster LISA:", options=sorted(df_spasial["cluster_label"].unique()), key="kluster_spasial", placeholder="Semua Kluster")
+    
+    st.sidebar.write("---")
+    st.sidebar.info("Gunakan filter di atas untuk mengisolasi titik Hotspot/Coldspot pada provinsi tertentu di peta utama.")
+
+    # ==========================================
+    # KONTEN UTAMA HALAMAN SPASIAL
+    # ==========================================
+    st.markdown("<h1 style='font-size: 3rem; margin-bottom: 0;'>Spatial Autocorrelation</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;'>Eksplorasi autokorelasi menggunakan <b>Global & Local Moran's I (LISA)</b>.</p>", unsafe_allow_html=True)
+    
+    # Dibagi menjadi 4 kolom agar semua metrik sejajar di atas peta
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    
+    html_moran = f"""
+    <div class="metric-card">
+        <div class="metric-title">Global Moran's I Index</div>
+        <div class="metric-value">{moran.I:.4f}</div>
+        <div class="metric-delta {'delta-positive' if moran.I > 0 else 'delta-negative'}">{'Korelasi Positif' if moran.I > 0 else 'Dispersi'}</div>
+    </div>
+    """
+    col_m1.markdown(html_moran, unsafe_allow_html=True)
+    
+    html_pval = f"""
+    <div class="metric-card">
+        <div class="metric-title">P-Value Signifikansi</div>
+        <div class="metric-value">{moran.p_sim:.4f}</div>
+        <div class="metric-delta {'delta-positive' if moran.p_sim < 0.05 else 'delta-neutral'}">{'Signifikan (<0.05)' if moran.p_sim < 0.05 else 'Tidak Signifikan'}</div>
+    </div>
+    """
+    col_m2.markdown(html_pval, unsafe_allow_html=True)
+
+    html_ei = f"""
+    <div class="metric-card">
+        <div class="metric-title">Expected Index</div>
+        <div class="metric-value">{moran.EI:.4f}</div>
+        <div class="metric-delta delta-neutral">Nilai Harapan Acak</div>
+    </div>
+    """
+    col_m3.markdown(html_ei, unsafe_allow_html=True)
+
+    html_zscore = f"""
+    <div class="metric-card">
+        <div class="metric-title">Z-Score</div>
+        <div class="metric-value">{moran.z_sim:.4f}</div>
+        <div class="metric-delta {'delta-positive' if abs(moran.z_sim) >= 1.96 else 'delta-neutral'}">{'Signifikan (> ±1.96)' if abs(moran.z_sim) >= 1.96 else 'Tidak Kuat'}</div>
+    </div>
+    """
+    col_m4.markdown(html_zscore, unsafe_allow_html=True)
+        
+    st.markdown("### Peta Local Moran's I (LISA)")
+    
+    # Filter Data berdasarkan Sidebar
+    df_filtered_spasial = df_spasial.copy()
+    if provinsi_terpilih_spasial: df_filtered_spasial = df_filtered_spasial[df_filtered_spasial["provinsi"].isin(provinsi_terpilih_spasial)]
+    if kluster_terpilih: df_filtered_spasial = df_filtered_spasial[df_filtered_spasial["cluster_label"].isin(kluster_terpilih)]
+
+    warna_cluster = {
+        'HH (Hotspot)': '#16a34a', 'LL (Coldspot)': '#dc2626',
+        'HL (Outlier)': '#86efac', 'LH (Outlier)': '#fca5a5',
+        'Tidak Signifikan (ns)': '#e5e7eb'
+    }
+    
+    if df_filtered_spasial.empty:
+        st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
+    else:
+        fig_lisa = px.choropleth_map(
+            df_filtered_spasial, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+            color="cluster_label", color_discrete_map=warna_cluster, map_style="basic", zoom=4, 
+            center={"lat": -2.5, "lon": 118}, opacity=0.9, hover_name="kab_kota", 
+            hover_data={"ikp": True, "cluster_label": False}, height=550
+        )
+        fig_lisa.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_lisa, width='stretch')
+
+    st.subheader("Raw Data")
+    kolom_spasial = ["kab_kota", "provinsi", "cluster_label", "ikp"]
+    st.dataframe(df_filtered_spasial[kolom_spasial], width='stretch', hide_index=True)
+
+
+# -----------------------------------------------------------------------------
+# 5. SETUP NAVIGATION & EKSEKUSI
+# -----------------------------------------------------------------------------
+# Mendefinisikan Pages & Navigation (Akan otomatis muncul di urutan paling atas sidebar)
+page_1 = st.Page(halaman_bayesian, title="Model Bayesian", default=True)
+page_2 = st.Page(halaman_spasial, title="Analisis Spasial")
+
+pg = st.navigation({
+    "Menu Analisis Utama": [page_1, page_2]
+})
+
+# Eksekusi (Harus ditaruh di akhir file)
+pg.run()
