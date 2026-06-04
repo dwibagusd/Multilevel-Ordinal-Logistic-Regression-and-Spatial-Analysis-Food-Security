@@ -217,8 +217,8 @@ def halaman_bayesian():
     df_sim["status_ketahanan"] = df_sim["predik_label"].map(status_map)
 
     # Ukuran Font Header (h1, p) diperkecil via inline CSS
-    st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Multilevel Bayesian Regression</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1rem;'>Platform analisis interaktif berbasis pemodelan <b>Bayesian Multilevel</b> skala Nasional.</p>", unsafe_allow_html=True)
+    # st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Multilevel Bayesian Regression</h1>", unsafe_allow_html=True)
+    # st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1rem;'>Platform analisis interaktif berbasis pemodelan <b>Bayesian Multilevel</b> skala Nasional.</p>", unsafe_allow_html=True)
 
     # Menambahkan parameter unit_text
     def render_custom_metric(col, label, unit_text, var_name, is_inverse=False, is_absolute=False):
@@ -263,7 +263,7 @@ def halaman_bayesian():
     col_kiri, col_kanan = st.columns([4.5, 5.5])
     
     with col_kiri:
-        st.markdown("#### 📊 Rata-Rata Nasional")
+        # st.markdown("#### 📊 Rata-Rata Nasional")
         
         # Grid 3 kolom di dalam sisi kiri
         sub_c1, sub_c2, sub_c3 = st.columns(3)
