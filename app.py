@@ -177,7 +177,10 @@ def halaman_bayesian():
     # ==========================================
     # SIDEBAR KHUSUS HALAMAN BAYESIAN
     # ==========================================
-    st.sidebar.subheader(":material/filter_alt: Simulasi What-If")
+    st.sidebar.markdown("### Filter Eksplorasi Peta")
+    provinsi_terpilih = st.sidebar.multiselect("Filter Provinsi:", options=sorted(df_clean["provinsi"].unique()), key="prov_bayes", placeholder="Semua Provinsi")
+    label_terpilih = st.sidebar.multiselect("Filter Status:", options=["Rentan", "Tahan", "Sangat Tahan"], key="label_bayes", placeholder="Semua Status")
+    st.sidebar.subheader("Simulasi What-If")
 
     # Mengelompokkan Sliders
     with st.sidebar.expander("Level 1 (Kabupaten/Kota)", expanded=True):
