@@ -509,7 +509,7 @@ def halaman_spasial():
     # PEMBAGIAN LAYOUT SPASIAL (1 KOLOM KIRI : PETA KANAN)
     # Ratio [1, 3] berarti 25% Kiri dan 75% Kanan
     # ==========================================
-    col_kiri, col_kanan = st.columns([1, 3])
+    col_kiri, col_kanan = st.columns([2, 8])
     
     with col_kiri:
         st.markdown("#### 🌍 Indikator Global")
