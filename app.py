@@ -213,7 +213,7 @@ def halaman_bayesian():
         """
         col.markdown(html_content, unsafe_allow_html=True)
 
-    st.markdown("#### 📊 Indikator Utama (Rata-Rata Nasional)")
+    # st.markdown("#### 📊 Indikator Utama (Rata-Rata Nasional)")
     
     # Baris 1
     col_x1, col_x2, col_x3, col_x4, col_x5 = st.columns(5)
