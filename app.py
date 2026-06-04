@@ -362,6 +362,7 @@ def halaman_simulasi_lokal():
         reset_nilai_ke_awal()
 
     st.sidebar.write("---")
+    if st.sidebar.button("Reset Nilai", use_container_width=True): reset_nilai_ke_awal()
 
     with st.sidebar.form("form_lokal"):
         st.markdown("#### Ubah Nilai")
@@ -369,8 +370,7 @@ def halaman_simulasi_lokal():
             if f"sim_{col}" not in st.session_state: st.session_state[f"sim_{col}"] = float(df_base.loc[idx_kab, col])
             st.number_input(f"{label} ({unit})", key=f"sim_{col}", step=1.0)
         submit_simpan = st.form_submit_button("Simpan", use_container_width=True)
-    if st.sidebar.button("Reset Nilai", use_container_width=True): reset_nilai_ke_awal()
-
+    
     df_sim_local = df_base.copy()
     for col in dict_variabel_lokal.keys(): df_sim_local.loc[idx_kab, col] = st.session_state[f"sim_{col}"]
         
