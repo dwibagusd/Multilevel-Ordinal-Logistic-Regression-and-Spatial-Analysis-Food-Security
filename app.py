@@ -478,11 +478,12 @@ def halaman_spasial():
 # 5. SETUP NAVIGATION & EKSEKUSI
 # -----------------------------------------------------------------------------
 # Mendefinisikan Pages & Navigation (Akan otomatis muncul di urutan paling atas sidebar)
-page_1 = st.Page(halaman_bayesian, title="Model Bayesian", default=True)
+page_1 = st.Page(halaman_bayesian, title="Model Bayesian (Global)", default=True)
+page_3 = st.Page(halaman_simulasi_lokal, title="Simulasi Spesifik (Lokal)")
 page_2 = st.Page(halaman_spasial, title="Analisis Spasial")
 
 pg = st.navigation({
-    "Menu Analisis Utama": [page_1, page_2]
+    "Menu Analisis Utama": [page_1, page_3, page_2]
 })
 
 # Eksekusi (Harus ditaruh di akhir file)
