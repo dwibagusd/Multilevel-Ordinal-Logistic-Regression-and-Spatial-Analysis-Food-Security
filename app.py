@@ -159,31 +159,26 @@ def halaman_bayesian():
     df_sim["pengeluaran_pangan"] = (df_clean["pengeluaran_pangan"] * (1 + sim_pengeluaran_pangan / 100)).clip(0, 100)
     df_sim["kemiskinan"] = (df_clean["kemiskinan"] * (1 + sim_kemiskinan / 100)).clip(0, 100)
     df_sim["stunting"] = (df_clean["stunting"] * (1 + sim_stunting / 100)).clip(0, 100)
+    df_sim["harapan_hidup"] = (df_clean["harapan_hidup"] * (1 + sim_harapan_hidup / 100)).clip(0, 100)
     df_sim["tanpa_listrik"] = (df_clean["tanpa_listrik"] * (1 + sim_tanpa_listrik / 100)).clip(0, 100)
     df_sim["tanpa_air_bersih"] = (df_clean["tanpa_air_bersih"] * (1 + sim_tanpa_air_bersih / 100)).clip(0, 100)
-    df_sim["harapan_hidup"] = (df_clean["harapan_hidup"] * (1 + sim_harapan_hidup / 100)).clip(0, 100) 
-    df_sim["lama_sekolah_perempuan"] = (df_clean["lama_sekolah_perempuan"] * (1 + sim_lama_sekolah_perempuan / 100)).clip(0, 18) 
     df_sim["tenaga_kesehatan"] = (df_clean["tenaga_kesehatan"] * (1 + sim_tenaga_kesehatan / 100)).clip(lower=0)
+    df_sim["lama_sekolah_perempuan"] = (df_clean["lama_sekolah_perempuan"] * (1 + sim_lama_sekolah_perempuan / 100)).clip(0, 18)
     df_sim["anggaran_bansos"] = df_clean["anggaran_bansos"] + sim_bansos
-
-    st.sidebar.button("Reset", on_click=reset_simulasi, width='stretch')
 
     pred_awal = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
     pred_sim = predict_ordinal_probs_pymc(df_sim, weights, df_clean)
 
     df_clean["predik_label"] = pred_awal
     df_sim["predik_label"] = pred_sim
-    
-    status_map = {0: "Rentan", 1: "Tahan", 2: "Sangat Tahan"}
     df_sim["status_ketahanan"] = df_sim["predik_label"].map(status_map)
 
-    # ==========================================
-    # KONTEN UTAMA HALAMAN BAYESIAN
-    # ==========================================
+    # Ukuran Font Header (h1, p) diperkecil via inline CSS
     st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Multilevel Bayesian Regression</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Dashboard ini merupakan hasil dari model <b><i>Bayesian Multilevel Logistic Regression</i></b> untuk prediksi Status Ketahanan Pangan Kabupaten/Kota di Indonesia tahun 2024.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Platform analisis interaktif berbasis pemodelan <b>Bayesian Multilevel</b> skala Nasional.</p>", unsafe_allow_html=True)
 
-    def render_custom_metric(col, label, var_name, is_inverse=False, is_absolute=False):
+    # Menambahkan parameter unit_text
+    def render_custom_metric(col, label, unit_text, var_name, is_inverse=False, is_absolute=False):
         if var_name not in df_clean.columns: return
         val_awal = df_clean[var_name].mean()
         val_sim = df_sim[var_name].mean()
@@ -207,6 +202,7 @@ def halaman_bayesian():
             delta_class = "delta-neutral"
             delta_str = "0.0%" if not is_absolute else "0.00 Poin"
 
+        # HTML Diperbarui dengan .metric-unit
         html_content = f"""
         <div class="metric-card">
             <div class="metric-title">{label}</div>
@@ -217,10 +213,12 @@ def halaman_bayesian():
         """
         col.markdown(html_content, unsafe_allow_html=True)
 
+    st.markdown("#### 📊 Indikator Utama (Rata-Rata Nasional)")
+    
     # Baris 1
     col_x1, col_x2, col_x3, col_x4, col_x5 = st.columns(5)
     render_custom_metric(col_x1, "NCPR", "Rasio Pangan/Kapita", "ncpr")
-    # render_custom_metric(col_x2, "Kemiskinan", "% Penduduk", "kemiskinan", is_inverse=True)
+    render_custom_metric(col_x2, "Kemiskinan", "% Penduduk", "kemiskinan", is_inverse=True)
     render_custom_metric(col_x3, "Pengeluaran Pangan", "% Total Belanja", "pengeluaran_pangan")
     render_custom_metric(col_x4, "Tanpa Listrik", "% Rumah Tangga", "tanpa_listrik", is_inverse=True)
     render_custom_metric(col_x5, "Tanpa Air Bersih", "% Rumah Tangga", "tanpa_air_bersih", is_inverse=True)
@@ -232,7 +230,8 @@ def halaman_bayesian():
     render_custom_metric(col_x8, "Harapan Hidup", "Usia (Tahun)", "harapan_hidup")
     render_custom_metric(col_x9, "Stunting", "% Balita", "stunting", is_inverse=True)
     render_custom_metric(col_x10, "Bansos", "Z-Score Absolut", "anggaran_bansos", is_absolute=True)
-    # st.write("---")
+
+    st.write("---")
     
     rentan_awal = (pred_awal == 0).sum()
     rentan_sim = (pred_sim == 0).sum()
@@ -253,33 +252,30 @@ def halaman_bayesian():
     * Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.
     """)
 
-    st.markdown("### Visualisasi & Eksplorasi Spasial")
+    st.markdown("#### 📈 Visualisasi & Eksplorasi Spasial")
     
     col_f1, col_f2 = st.columns(2)
     with col_f1:
-        provinsi_terpilih = st.multiselect("Filter Provinsi:", options=sorted(df_sim["provinsi"].unique()), key="prov_bayes", placeholder="Pilih Provinsi...")
+        provinsi_terpilih = st.multiselect("📍 Filter Provinsi:", options=sorted(df_sim["provinsi"].unique()), key="prov_bayes", placeholder="Pilih Provinsi...")
     with col_f2:
-        label_terpilih = st.multiselect("Filter Status Ketahanan:", options=list(status_map.values()), key="label_bayes", placeholder="Pilih Status...")
+        label_terpilih = st.multiselect("🏷️ Filter Status Ketahanan:", options=sorted(df_sim["status_ketahanan"].unique()), key="label_bayes", placeholder="Pilih Status...")
         
     df_filtered_bayes = df_sim.copy()
     if provinsi_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["provinsi"].isin(provinsi_terpilih)]
     if label_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["status_ketahanan"].isin(label_terpilih)]
+
     if df_filtered_bayes.empty:
         st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
     else:
         fig_map = px.choropleth_map(
             df_filtered_bayes, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
-            color="status_ketahanan", color_discrete_map={"Rentan": "#dc2626", "Tahan": "#fde047", "Sangat Tahan": "#16a34a"},
+            color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
             map_style="basic", zoom=4, center={"lat": -2.5, "lon": 118}, opacity=0.8,
             hover_name="kab_kota", hover_data=["provinsi", "kemiskinan"] if "kemiskinan" in df_filtered_bayes.columns else ["provinsi"],
             height=500
         )
         fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_map, width='stretch')
-
-    st.subheader("Raw Data")
-    kolom_penting = ["kab_kota", "provinsi", "status_ketahanan", "ncpr", "kemiskinan", "pengeluaran_pangan", "stunting"]
-    st.dataframe(df_filtered_bayes[kolom_penting], width='stretch', hide_index=True)
 
 # -----------------------------------------------------------------------------
 # 4. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK (COMPACT UI)
