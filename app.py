@@ -273,16 +273,45 @@ def halaman_simulasi_lokal():
     st.sidebar.info("Halaman ini berfokus pada eksperimen perubahan nilai secara absolut (angka langsung) pada satu Kabupaten/Kota spesifik tanpa mengubah nilai nasional.")
     
     st.markdown("<h1 style='font-size: 3rem; margin-bottom: 0;'>Simulasi Kebijakan Spesifik</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;'>Pilih satu Kabupaten/Kota, ubah nilai variabelnya, dan lihat dampak langsungnya terhadap status ketahanan pangan wilayah tersebut.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;'>Filter status wilayah, pilih satu Kabupaten/Kota, ubah nilainya, dan lihat dampak langsungnya.</p>", unsafe_allow_html=True)
 
-    # 1. UI Pemilihan
-    col1, col2, col3 = st.columns(3)
+    # Menghitung prediksi dasar (baseline) untuk semua wilayah agar bisa difilter
+    pred_awal_global = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
+    df_base = df_clean.copy()
+    df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
+
+    # ==========================================
+    # 1. UI PEMILIHAN (FILTER DALAM FILTER)
+    # ==========================================
+    st.markdown("#### 1. Filter & Pilih Wilayah Target")
+    col_w1, col_w2 = st.columns(2)
     
-    with col1:
-        selected_kab = st.selectbox("📍 Pilih Kabupaten/Kota Target:", options=sorted(df_clean["kab_kota"].unique()))
+    with col_w1:
+        filter_status = st.selectbox(
+            "🔍 Filter Status Awal Wilayah:", 
+            options=["Semua Status", "Rentan", "Tahan", "Sangat Tahan"]
+        )
         
-    prov_terpilih = df_clean[df_clean["kab_kota"] == selected_kab]["provinsi"].values[0]
+    # Logika Filter: Memperbarui daftar Kabupaten berdasarkan status yang dipilih
+    if filter_status != "Semua Status":
+        pilihan_kab = sorted(df_base[df_base["status_ketahanan"] == filter_status]["kab_kota"].unique())
+    else:
+        pilihan_kab = sorted(df_base["kab_kota"].unique())
+        
+    with col_w2:
+        # Proteksi jika kebetulan tidak ada wilayah di status tersebut
+        if not pilihan_kab:
+            st.warning(f"⚠️ Tidak ada wilayah dengan status {filter_status} saat ini.")
+            st.stop()
+            
+        selected_kab = st.selectbox("📍 Pilih Kabupaten/Kota Target:", options=pilihan_kab)
+        
+    prov_terpilih = df_base[df_base["kab_kota"] == selected_kab]["provinsi"].values[0]
     
+    # ==========================================
+    # 2. UI SKENARIO INTERVENSI
+    # ==========================================
+    st.markdown("#### 2. Skenario Intervensi Variabel")
     dict_variabel = {
         "NCPR": "ncpr",
         "Kemiskinan (%)": "kemiskinan",
@@ -296,30 +325,32 @@ def halaman_simulasi_lokal():
         "Anggaran Bansos (Z-Score)": "anggaran_bansos"
     }
     
-    with col2:
-        selected_var_label = st.selectbox("🎯 Pilih Variabel untuk Diubah:", options=list(dict_variabel.keys()))
+    col_v1, col_v2 = st.columns(2)
+    with col_v1:
+        selected_var_label = st.selectbox("🎯 Pilih Variabel untuk Diintervensi:", options=list(dict_variabel.keys()))
         selected_var_col = dict_variabel[selected_var_label]
         
-    # Ambil index dan nilai saat ini dari dataset bersih
-    idx_kab = df_clean[df_clean["kab_kota"] == selected_kab].index[0]
-    current_val = float(df_clean.loc[idx_kab, selected_var_col])
+    # Ambil index dan nilai saat ini dari dataset baseline
+    idx_kab = df_base[df_base["kab_kota"] == selected_kab].index[0]
+    current_val = float(df_base.loc[idx_kab, selected_var_col])
     
-    with col3:
+    with col_v2:
         new_val = st.number_input(f"✍️ Ketik Nilai Baru ({selected_var_label}):", value=current_val, step=1.0)
         
     st.write("---")
     
-    # 2. Proses Prediksi Lokal
-    df_sim_local = df_clean.copy()
+    # ==========================================
+    # 3. PROSES PREDIKSI & DAMPAK LOKAL
+    # ==========================================
+    df_sim_local = df_base.copy()
     df_sim_local.loc[idx_kab, selected_var_col] = new_val
     
-    pred_awal_local = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
+    # Hitung ulang prediksi dengan nilai yang baru
     pred_sim_local = predict_ordinal_probs_pymc(df_sim_local, weights, df_clean)
     
-    status_awal_str = status_map[pred_awal_local[idx_kab]]
+    status_awal_str = df_base.loc[idx_kab, "status_ketahanan"]
     status_baru_str = status_map[pred_sim_local[idx_kab]]
     
-    # 3. Keterangan Dampak & Visualisasi Data
     st.markdown("### 📊 Analisis Dampak Perubahan")
     
     col_d1, col_d2 = st.columns([3, 7])
@@ -327,18 +358,21 @@ def halaman_simulasi_lokal():
     with col_d1:
         st.metric(f"Nilai Awal {selected_var_label}", f"{current_val:.2f}")
         
-        # Logika teks keterangan
-        if pred_sim_local[idx_kab] > pred_awal_local[idx_kab]: # Naik kelas (misal Rentan -> Tahan)
+        # Logika teks keterangan membandingkan Index Kategori (0=Rentan, 1=Tahan, 2=Sangat Tahan)
+        idx_awal = pred_awal_global[idx_kab]
+        idx_baru = pred_sim_local[idx_kab]
+        
+        if idx_baru > idx_awal: 
             delta_str = "Status Meningkat"
             st.metric("Prediksi Status Baru", status_baru_str, delta=delta_str, delta_color="normal")
             st.success(f"🎉 **Sukses!** Intervensi nilai **{selected_var_label}** menjadi **{new_val:.2f}** berhasil meningkatkan status **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
             
-        elif pred_sim_local[idx_kab] < pred_awal_local[idx_kab]: # Turun kelas
+        elif idx_baru < idx_awal: 
             delta_str = "Status Menurun"
             st.metric("Prediksi Status Baru", status_baru_str, delta=delta_str, delta_color="inverse")
             st.error(f"⚠️ **Waspada!** Perubahan nilai **{selected_var_label}** menjadi **{new_val:.2f}** menyebabkan status **{selected_kab}** turun dari **{status_awal_str}** menjadi **{status_baru_str}**.")
             
-        else: # Tetap
+        else:
             delta_str = "Status Stagnan"
             st.metric("Prediksi Status Baru", status_baru_str, delta=delta_str, delta_color="off")
             if current_val != new_val:
@@ -346,19 +380,21 @@ def halaman_simulasi_lokal():
             else:
                 st.info("Ketikkan angka baru pada kotak di atas untuk memulai simulasi.")
 
-    # 4. Pembuatan Peta Fokus Provinsi
+    # ==========================================
+    # 4. PEMBUATAN PETA FOKUS PROVINSI
+    # ==========================================
     with col_d2:
         df_sim_local["status_ketahanan"] = pd.Series(pred_sim_local).map(status_map)
         
         # Filter peta HANYA untuk provinsi dari kabupaten terpilih agar lebih fokus
         df_map_local = df_sim_local[df_sim_local["provinsi"] == prov_terpilih]
         
-        st.markdown(f"**Peta Ketahanan Pangan (Fokus Provinsi: {prov_terpilih})**")
+        st.markdown(f"**🗺️ Peta Interaktif (Fokus Provinsi: {prov_terpilih})**")
         fig_map_local = px.choropleth_map(
             df_map_local, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
             color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-            map_style="basic", zoom=4, center={"lat": -2.5, "lon": 118}, opacity=0.9, 
-            hover_name="kab_kota", hover_data=["provinsi", selected_var_col], height=400
+            map_style="basic", zoom=4.5, center={"lat": -2.5, "lon": 118}, opacity=0.9, 
+            hover_name="kab_kota", hover_data=["provinsi", selected_var_col], height=420
         )
         fig_map_local.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
         st.plotly_chart(fig_map_local, use_container_width=True)
