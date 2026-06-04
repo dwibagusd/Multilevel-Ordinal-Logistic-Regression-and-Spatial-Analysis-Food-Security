@@ -21,23 +21,37 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+    /* 1. Mengecilkan Font Global & Elemen Streamlit Bawaan */
+    html, body, p, li, label, .streamlit-expanderHeader, .stMarkdown { 
+        font-size: 0.9rem !important; 
+    }
+    
+    /* 2. Styling Custom Metric Card (Lebih Compact) */
     .metric-card {
         background-color: #ffffff;
         border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        margin-bottom: 16px;
+        border-radius: 6px;
+        padding: 12px 16px; /* Diperkecil agar hemat ruang vertikal */
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        margin-bottom: 12px;
         font-family: 'Inter', sans-serif;
     }
-    .metric-title { color: #6b7280; font-size: 0.9rem; font-weight: 500; margin-bottom: 10px; }
-    .metric-value { font-size: 2.2rem; font-weight: 700; color: #111827; margin-bottom: 12px; }
-    .metric-delta { font-size: 0.85rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+    .metric-title { color: #4b5563; font-size: 0.8rem; font-weight: 600; margin-bottom: 2px; line-height: 1.2; }
+    .metric-unit { color: #9ca3af; font-size: 0.7rem; margin-bottom: 8px; line-height: 1; } /* Tambahan Keterangan Satuan */
+    .metric-value { font-size: 1.6rem; font-weight: 700; color: #111827; margin-bottom: 8px; line-height: 1; }
+    .metric-delta { font-size: 0.75rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+    
+    /* Warna Delta */
     .delta-positive { background-color: #dcfce7; color: #166534; }
     .delta-negative { background-color: #fee2e2; color: #991b1b; }
     .delta-neutral { background-color: #f3f4f6; color: #374151; }
+    
+    /* 3. Menyesuaikan Native Metric Streamlit di Halaman Simulasi Lokal */
+    [data-testid="stMetricValue"] div { font-size: 1.5rem !important; }
+    [data-testid="stMetricLabel"] p { font-size: 0.8rem !important; }
+
+    /* Fix Sidebar Text Color */
     [data-testid="stSidebar"] { color: #f8fafc; }
-    .streamlit-expanderHeader { color: #f8fafc !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -166,8 +180,8 @@ def halaman_bayesian():
     # ==========================================
     # KONTEN UTAMA HALAMAN BAYESIAN
     # ==========================================
-    st.markdown("<h1 style='font-size: 2.5rem; margin-bottom: 0;'>Multilevel Bayesian Regression</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #6b7280; font-size: 1.0rem; margin-bottom: 2rem;'>Dashboard ini merupakan hasil dari model <b><i>Bayesian Multilevel Logistic Regression</i></b> untuk prediksi Status Ketahanan Pangan Kabupaten/Kota di Indonesia tahun 2024.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Multilevel Bayesian Regression</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Dashboard ini merupakan hasil dari model <b><i>Bayesian Multilevel Logistic Regression</i></b> untuk prediksi Status Ketahanan Pangan Kabupaten/Kota di Indonesia tahun 2024.</p>", unsafe_allow_html=True)
 
     def render_custom_metric(col, label, var_name, is_inverse=False, is_absolute=False):
         if var_name not in df_clean.columns: return
@@ -196,26 +210,28 @@ def halaman_bayesian():
         html_content = f"""
         <div class="metric-card">
             <div class="metric-title">{label}</div>
+            <div class="metric-unit">{unit_text}</div>
             <div class="metric-value">{formatted_val}</div>
             <div class="metric-delta {delta_class}">{arrow} {delta_str}</div>
         </div>
         """
         col.markdown(html_content, unsafe_allow_html=True)
 
+    # Baris 1
     col_x1, col_x2, col_x3, col_x4, col_x5 = st.columns(5)
-    render_custom_metric(col_x1, "NCPR", "ncpr")
-    render_custom_metric(col_x2, "Kemiskinan", "kemiskinan", is_inverse=True)
-    render_custom_metric(col_x3, "Pengeluaran Pangan", "pengeluaran_pangan")
-    render_custom_metric(col_x4, "Tanpa Listrik", "tanpa_listrik", is_inverse=True)
-    render_custom_metric(col_x5, "Tanpa Air Bersih", "tanpa_air_bersih", is_inverse=True)
+    render_custom_metric(col_x1, "NCPR", "Rasio Pangan/Kapita", "ncpr")
+    render_custom_metric(col_x2, "Kemiskinan", "% Penduduk", "kemiskinan", is_inverse=True)
+    render_custom_metric(col_x3, "Pengeluaran Pangan", "% Total Belanja", "pengeluaran_pangan")
+    render_custom_metric(col_x4, "Tanpa Listrik", "% Rumah Tangga", "tanpa_listrik", is_inverse=True)
+    render_custom_metric(col_x5, "Tanpa Air Bersih", "% Rumah Tangga", "tanpa_air_bersih", is_inverse=True)
     
+    # Baris 2
     col_x6, col_x7, col_x8, col_x9, col_x10 = st.columns(5)
-    render_custom_metric(col_x6, "Lama Sekolah (Pr)", "lama_sekolah_perempuan")
-    render_custom_metric(col_x7, "Tenaga Kesehatan", "tenaga_kesehatan")
-    render_custom_metric(col_x8, "Harapan Hidup", "harapan_hidup")
-    render_custom_metric(col_x9, "Stunting", "stunting", is_inverse=True)
-    render_custom_metric(col_x10, "Bansos (Z-Score)", "anggaran_bansos", is_absolute=True)
-
+    render_custom_metric(col_x6, "Lama Sekolah (Pr)", "Rata-rata Tahun", "lama_sekolah_perempuan")
+    render_custom_metric(col_x7, "Tenaga Kesehatan", "Rasio Perkapita", "tenaga_kesehatan")
+    render_custom_metric(col_x8, "Harapan Hidup", "Usia (Tahun)", "harapan_hidup")
+    render_custom_metric(col_x9, "Stunting", "% Balita", "stunting", is_inverse=True)
+    render_custom_metric(col_x10, "Bansos", "Z-Score Absolut", "anggaran_bansos", is_absolute=True)
     # st.write("---")
     
     rentan_awal = (pred_awal == 0).sum()
@@ -334,7 +350,6 @@ def halaman_simulasi_lokal():
 
     # Form Simulasi (Batch Input)
     with st.sidebar.form("form_lokal"):
-        st.markdown("#### ✍️ Ubah Nilai Variabel")
         st.caption("Ubah angka di bawah ini, lalu klik Simpan untuk memproses.")
         
         # Looping untuk membuat seluruh input box tanpa harus memilih variabel dulu
@@ -365,8 +380,8 @@ def halaman_simulasi_lokal():
     # ==========================================
     # 3. KONTEN UTAMA (PETA DI ATAS)
     # ==========================================
-    st.markdown("<h1 style='font-size: 3rem; margin-bottom: 0;'>Simulasi Kebijakan Spesifik</h1>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;'>Fokus Peta: <b>Provinsi {prov_terpilih}</b> (Daerah Target: <b>{selected_kab}</b>)</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Simulasi Kebijakan Spesifik</h1>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Fokus Peta: <b>Provinsi {prov_terpilih}</b> (Daerah Target: <b>{selected_kab}</b>)</p>", unsafe_allow_html=True)
 
     # PETA BERADA DI PALING ATAS
     df_map_local = df_sim_local[df_sim_local["provinsi"] == prov_terpilih]
@@ -395,7 +410,7 @@ def halaman_simulasi_lokal():
     else:
         st.info(f"💡 **Stagnan:** Nilai yang Anda terapkan belum cukup untuk mengubah status ketahanan pangan **{selected_kab}** (Tetap **{status_awal_str}**).")
 
-    st.write("---")
+    # st.write("---")
     st.markdown(f"**Detail Perubahan Variabel di {selected_kab}:**")
     
     # Membuat 2 Baris berisi 5 Kolom agar 10 Variabel tampil cantik
@@ -459,8 +474,8 @@ def halaman_spasial():
     # ==========================================
     # KONTEN UTAMA HALAMAN SPASIAL
     # ==========================================
-    st.markdown("<h1 style='font-size: 3rem; margin-bottom: 0;'>Spatial Autocorrelation</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;'>Eksplorasi autokorelasi menggunakan <b>Global & Local Moran's I (LISA)</b>.</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Spatial Autocorrelation</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Eksplorasi autokorelasi menggunakan <b>Global & Local Moran's I (LISA)</b>.</p>", unsafe_allow_html=True)
     
     # Dibagi menjadi 4 kolom agar semua metrik sejajar di atas peta
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
@@ -468,6 +483,7 @@ def halaman_spasial():
     html_moran = f"""
     <div class="metric-card">
         <div class="metric-title">Global Moran's I Index</div>
+        <div class="metric-unit">Indeks Autokorelasi</div>
         <div class="metric-value">{moran.I:.4f}</div>
         <div class="metric-delta {'delta-positive' if moran.I > 0 else 'delta-negative'}">{'Korelasi Positif' if moran.I > 0 else 'Dispersi'}</div>
     </div>
@@ -477,6 +493,7 @@ def halaman_spasial():
     html_pval = f"""
     <div class="metric-card">
         <div class="metric-title">P-Value Signifikansi</div>
+        <div class="metric-unit">Uji Permutasi</div>
         <div class="metric-value">{moran.p_sim:.4f}</div>
         <div class="metric-delta {'delta-positive' if moran.p_sim < 0.05 else 'delta-neutral'}">{'Signifikan (<0.05)' if moran.p_sim < 0.05 else 'Tidak Signifikan'}</div>
     </div>
@@ -486,8 +503,9 @@ def halaman_spasial():
     html_ei = f"""
     <div class="metric-card">
         <div class="metric-title">Expected Index</div>
+        <div class="metric-unit">Nilai Harapan (Acak)</div>
         <div class="metric-value">{moran.EI:.4f}</div>
-        <div class="metric-delta delta-neutral">Nilai Harapan Acak</div>
+        <div class="metric-delta delta-neutral">Batas Nol Spasial</div>
     </div>
     """
     col_m3.markdown(html_ei, unsafe_allow_html=True)
@@ -495,6 +513,7 @@ def halaman_spasial():
     html_zscore = f"""
     <div class="metric-card">
         <div class="metric-title">Z-Score</div>
+        <div class="metric-unit">Standar Deviasi</div>
         <div class="metric-value">{moran.z_sim:.4f}</div>
         <div class="metric-delta {'delta-positive' if abs(moran.z_sim) >= 1.96 else 'delta-neutral'}">{'Signifikan (> ±1.96)' if abs(moran.z_sim) >= 1.96 else 'Tidak Kuat'}</div>
     </div>
