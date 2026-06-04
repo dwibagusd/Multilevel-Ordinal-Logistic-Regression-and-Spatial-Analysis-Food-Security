@@ -112,6 +112,8 @@ def reset_simulasi():
     for key in kunci_slider_float: st.session_state[key] = 0.0
     for key in kunci_slider_int: st.session_state[key] = 0
 
+status_map = {0: "Rentan", 1: "Tahan", 2: "Sangat Tahan"}
+
 
 # -----------------------------------------------------------------------------
 # 3. FUNGSI HALAMAN 1: BAYESIAN MULTILEVEL
@@ -263,6 +265,103 @@ def halaman_bayesian():
     kolom_penting = ["kab_kota", "provinsi", "status_ketahanan", "ncpr", "kemiskinan", "pengeluaran_pangan", "stunting"]
     st.dataframe(df_filtered_bayes[kolom_penting], width='stretch', hide_index=True)
 
+# -----------------------------------------------------------------------------
+# 4. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK
+# -----------------------------------------------------------------------------
+def halaman_simulasi_lokal():
+    st.sidebar.markdown("### 🎯 Simulasi Lokal")
+    st.sidebar.info("Halaman ini berfokus pada eksperimen perubahan nilai secara absolut (angka langsung) pada satu Kabupaten/Kota spesifik tanpa mengubah nilai nasional.")
+    
+    st.markdown("<h1 style='font-size: 3rem; margin-bottom: 0;'>Simulasi Kebijakan Spesifik</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;'>Pilih satu Kabupaten/Kota, ubah nilai variabelnya, dan lihat dampak langsungnya terhadap status ketahanan pangan wilayah tersebut.</p>", unsafe_allow_html=True)
+
+    # 1. UI Pemilihan
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        selected_kab = st.selectbox("📍 Pilih Kabupaten/Kota Target:", options=sorted(df_clean["kab_kota"].unique()))
+        
+    prov_terpilih = df_clean[df_clean["kab_kota"] == selected_kab]["provinsi"].values[0]
+    
+    dict_variabel = {
+        "NCPR": "ncpr",
+        "Kemiskinan (%)": "kemiskinan",
+        "Pengeluaran Pangan (%)": "pengeluaran_pangan",
+        "Tanpa Listrik (%)": "tanpa_listrik",
+        "Tanpa Air Bersih (%)": "tanpa_air_bersih",
+        "Lama Sekolah Perempuan": "lama_sekolah_perempuan",
+        "Tenaga Kesehatan": "tenaga_kesehatan",
+        "Harapan Hidup": "harapan_hidup",
+        "Stunting (%)": "stunting",
+        "Anggaran Bansos (Z-Score)": "anggaran_bansos"
+    }
+    
+    with col2:
+        selected_var_label = st.selectbox("🎯 Pilih Variabel untuk Diubah:", options=list(dict_variabel.keys()))
+        selected_var_col = dict_variabel[selected_var_label]
+        
+    # Ambil index dan nilai saat ini dari dataset bersih
+    idx_kab = df_clean[df_clean["kab_kota"] == selected_kab].index[0]
+    current_val = float(df_clean.loc[idx_kab, selected_var_col])
+    
+    with col3:
+        new_val = st.number_input(f"✍️ Ketik Nilai Baru ({selected_var_label}):", value=current_val, step=1.0)
+        
+    st.write("---")
+    
+    # 2. Proses Prediksi Lokal
+    df_sim_local = df_clean.copy()
+    df_sim_local.loc[idx_kab, selected_var_col] = new_val
+    
+    pred_awal_local = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
+    pred_sim_local = predict_ordinal_probs_pymc(df_sim_local, weights, df_clean)
+    
+    status_awal_str = status_map[pred_awal_local[idx_kab]]
+    status_baru_str = status_map[pred_sim_local[idx_kab]]
+    
+    # 3. Keterangan Dampak & Visualisasi Data
+    st.markdown("### 📊 Analisis Dampak Perubahan")
+    
+    col_d1, col_d2 = st.columns([3, 7])
+    
+    with col_d1:
+        st.metric(f"Nilai Awal {selected_var_label}", f"{current_val:.2f}")
+        
+        # Logika teks keterangan
+        if pred_sim_local[idx_kab] > pred_awal_local[idx_kab]: # Naik kelas (misal Rentan -> Tahan)
+            delta_str = "Status Meningkat"
+            st.metric("Prediksi Status Baru", status_baru_str, delta=delta_str, delta_color="normal")
+            st.success(f"🎉 **Sukses!** Intervensi nilai **{selected_var_label}** menjadi **{new_val:.2f}** berhasil meningkatkan status **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
+            
+        elif pred_sim_local[idx_kab] < pred_awal_local[idx_kab]: # Turun kelas
+            delta_str = "Status Menurun"
+            st.metric("Prediksi Status Baru", status_baru_str, delta=delta_str, delta_color="inverse")
+            st.error(f"⚠️ **Waspada!** Perubahan nilai **{selected_var_label}** menjadi **{new_val:.2f}** menyebabkan status **{selected_kab}** turun dari **{status_awal_str}** menjadi **{status_baru_str}**.")
+            
+        else: # Tetap
+            delta_str = "Status Stagnan"
+            st.metric("Prediksi Status Baru", status_baru_str, delta=delta_str, delta_color="off")
+            if current_val != new_val:
+                st.info(f"💡 **Informasi:** Intervensi nilai menjadi **{new_val:.2f}** belum cukup kuat untuk mengubah status ketahanan pangan (Tetap **{status_awal_str}**). Cobalah ubah angka dengan jarak yang lebih signifikan.")
+            else:
+                st.info("Ketikkan angka baru pada kotak di atas untuk memulai simulasi.")
+
+    # 4. Pembuatan Peta Fokus Provinsi
+    with col_d2:
+        df_sim_local["status_ketahanan"] = pd.Series(pred_sim_local).map(status_map)
+        
+        # Filter peta HANYA untuk provinsi dari kabupaten terpilih agar lebih fokus
+        df_map_local = df_sim_local[df_sim_local["provinsi"] == prov_terpilih]
+        
+        st.markdown(f"**Peta Ketahanan Pangan (Fokus Provinsi: {prov_terpilih})**")
+        fig_map_local = px.choropleth_map(
+            df_map_local, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+            color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
+            map_style="basic", zoom=4, center={"lat": -2.5, "lon": 118}, opacity=0.9, 
+            hover_name="kab_kota", hover_data=["provinsi", selected_var_col], height=400
+        )
+        fig_map_local.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_map_local, use_container_width=True)
 
 # -----------------------------------------------------------------------------
 # 4. FUNGSI HALAMAN 2: SPATIAL AUTOCORRELATION
