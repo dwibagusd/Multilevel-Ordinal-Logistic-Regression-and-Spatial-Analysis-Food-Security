@@ -337,8 +337,8 @@ def halaman_simulasi_lokal():
         "anggaran_bansos": ("Bansos", "Z-Score")
     }
 
-    st.sidebar.markdown("### 🎯 Simulasi Lokal Spesifik")
-    filter_status = st.sidebar.selectbox("🔍 Filter Status Awal:", options=["Semua Status", "Rentan", "Tahan", "Sangat Tahan"])
+    st.sidebar.markdown("### Simulasi What-if")
+    filter_status = st.sidebar.selectbox("Filter Status Awal:", options=["Semua Status", "Rentan", "Tahan", "Sangat Tahan"])
     
     if filter_status != "Semua Status":
         pilihan_kab = sorted(df_base[df_base["status_ketahanan"] == filter_status]["kab_kota"].unique())
@@ -348,7 +348,7 @@ def halaman_simulasi_lokal():
         st.sidebar.warning(f"Tidak ada wilayah dengan status {filter_status}.")
         st.stop()
         
-    selected_kab = st.sidebar.selectbox("📍 Pilih Kabupaten/Kota:", options=pilihan_kab)
+    selected_kab = st.sidebar.selectbox("Pilih Kabupaten/Kota:", options=pilihan_kab)
     prov_terpilih = df_base[df_base["kab_kota"] == selected_kab]["provinsi"].values[0]
     idx_kab = df_base[df_base["kab_kota"] == selected_kab].index[0]
 
@@ -362,14 +362,14 @@ def halaman_simulasi_lokal():
         reset_nilai_ke_awal()
 
     st.sidebar.write("---")
-    if st.sidebar.button("🔄 Reset ke Nilai Awal", use_container_width=True): reset_nilai_ke_awal()
 
     with st.sidebar.form("form_lokal"):
-        st.markdown("#### ✍️ Ubah Nilai Variabel")
+        st.markdown("#### Ubah Nilai")
         for col, (label, unit) in dict_variabel_lokal.items():
             if f"sim_{col}" not in st.session_state: st.session_state[f"sim_{col}"] = float(df_base.loc[idx_kab, col])
             st.number_input(f"{label} ({unit})", key=f"sim_{col}", step=1.0)
-        submit_simpan = st.form_submit_button("💾 Simpan & Lihat Dampak", use_container_width=True)
+        submit_simpan = st.form_submit_button("Simpan", use_container_width=True)
+    if st.sidebar.button("Reset Nilai", use_container_width=True): reset_nilai_ke_awal()
 
     df_sim_local = df_base.copy()
     for col in dict_variabel_lokal.keys(): df_sim_local.loc[idx_kab, col] = st.session_state[f"sim_{col}"]
