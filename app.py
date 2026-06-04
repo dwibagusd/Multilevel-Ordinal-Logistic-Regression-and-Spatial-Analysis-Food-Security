@@ -21,36 +21,25 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* 1. Mengecilkan Font Global & Elemen Streamlit Bawaan */
-    html, body, p, li, label, .streamlit-expanderHeader, .stMarkdown { 
-        font-size: 0.9rem !important; 
-    }
+    /* Mengoptimalkan Font agar muat di 3 Kolom */
+    html, body, p, li, label, .streamlit-expanderHeader, .stMarkdown { font-size: 0.9rem !important; }
     
-    /* 2. Styling Custom Metric Card (Lebih Compact) */
     .metric-card {
-        background-color: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        padding: 12px 16px; /* Diperkecil agar hemat ruang vertikal */
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        margin-bottom: 12px;
-        font-family: 'Inter', sans-serif;
+        background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px;
+        padding: 10px 12px; /* Padding sedikit dirapatkan agar muat 3 kolom */
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; font-family: 'Inter', sans-serif;
     }
-    .metric-title { color: #4b5563; font-size: 0.8rem; font-weight: 600; margin-bottom: 2px; line-height: 1.2; }
-    .metric-unit { color: #9ca3af; font-size: 0.7rem; margin-bottom: 8px; line-height: 1; } /* Tambahan Keterangan Satuan */
-    .metric-value { font-size: 1.6rem; font-weight: 700; color: #111827; margin-bottom: 8px; line-height: 1; }
-    .metric-delta { font-size: 0.75rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+    .metric-title { color: #4b5563; font-size: 0.75rem; font-weight: 600; margin-bottom: 2px; line-height: 1.2; }
+    .metric-unit { color: #9ca3af; font-size: 0.65rem; margin-bottom: 6px; line-height: 1; } 
+    .metric-value { font-size: 1.35rem; font-weight: 700; color: #111827; margin-bottom: 6px; line-height: 1; }
+    .metric-delta { font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; display: inline-block; }
     
-    /* Warna Delta */
     .delta-positive { background-color: #dcfce7; color: #166534; }
     .delta-negative { background-color: #fee2e2; color: #991b1b; }
     .delta-neutral { background-color: #f3f4f6; color: #374151; }
     
-    /* 3. Menyesuaikan Native Metric Streamlit di Halaman Simulasi Lokal */
-    [data-testid="stMetricValue"] div { font-size: 1.5rem !important; }
+    [data-testid="stMetricValue"] div { font-size: 1.4rem !important; }
     [data-testid="stMetricLabel"] p { font-size: 0.8rem !important; }
-
-    /* Fix Sidebar Text Color */
     [data-testid="stSidebar"] { color: #f8fafc; }
 </style>
 """, unsafe_allow_html=True)
@@ -229,7 +218,7 @@ def halaman_bayesian():
 
     # Ukuran Font Header (h1, p) diperkecil via inline CSS
     st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Multilevel Bayesian Regression</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Platform analisis interaktif berbasis pemodelan <b>Bayesian Multilevel</b> skala Nasional.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1rem;'>Platform analisis interaktif berbasis pemodelan <b>Bayesian Multilevel</b> skala Nasional.</p>", unsafe_allow_html=True)
 
     # Menambahkan parameter unit_text
     def render_custom_metric(col, label, unit_text, var_name, is_inverse=False, is_absolute=False):
@@ -271,37 +260,37 @@ def halaman_bayesian():
     # ==========================================
     # PEMBAGIAN LAYOUT (2 KOLOM KIRI : 3 KOLOM KANAN)
     # ==========================================
-    col_kiri, col_kanan = st.columns([2, 3])
+    col_kiri, col_kanan = st.columns([4.5, 5.5])
     
     with col_kiri:
-        # st.markdown("#### 📊 Rata-Rata Nasional")
+        st.markdown("#### 📊 Rata-Rata Nasional")
         
-        # Grid 2 kolom di dalam kolom kiri agar metrik tertata rapi ke bawah
-        sub_c1, sub_c2 = st.columns(2)
+        # Grid 3 kolom di dalam sisi kiri
+        sub_c1, sub_c2, sub_c3 = st.columns(3)
         
-        # Variabel Sisi Kiri
-        render_custom_metric(sub_c1, "NCPR", "Rasio Pangan/Kapita", "ncpr")
+        # Sisi Kiri (Kolom 1: 4 Metrik)
+        render_custom_metric(sub_c1, "NCPR", "Pangan/Kapita", "ncpr")
         render_custom_metric(sub_c1, "Kemiskinan", "% Penduduk", "kemiskinan", is_inverse=True)
-        render_custom_metric(sub_c1, "Pengeluaran", "% Total Belanja", "pengeluaran_pangan")
+        render_custom_metric(sub_c1, "Pengeluaran", "% Belanja", "pengeluaran_pangan")
         render_custom_metric(sub_c1, "Tanpa Listrik", "% Rumah Tangga", "tanpa_listrik", is_inverse=True)
-        render_custom_metric(sub_c1, "Tanpa Air Bersih", "% Rumah Tangga", "tanpa_air_bersih", is_inverse=True)
         
-        # Variabel Sisi Kanan
-        render_custom_metric(sub_c2, "Lama Sekolah (Pr)", "Rata-rata Tahun", "lama_sekolah_perempuan")
+        # Tengah (Kolom 2: 3 Metrik)
+        render_custom_metric(sub_c2, "Tanpa Air", "% Rumah Tangga", "tanpa_air_bersih", is_inverse=True)
+        render_custom_metric(sub_c2, "Lama Sekolah", "Rata-rata Tahun", "lama_sekolah_perempuan")
         render_custom_metric(sub_c2, "Nakes", "Rasio Perkapita", "tenaga_kesehatan")
-        render_custom_metric(sub_c2, "Harapan Hidup", "Usia (Tahun)", "harapan_hidup")
-        render_custom_metric(sub_c2, "Stunting", "% Balita", "stunting", is_inverse=True)
-        render_custom_metric(sub_c2, "Bansos", "Z-Score Absolut", "anggaran_bansos", is_absolute=True)
+        
+        # Sisi Kanan (Kolom 3: 3 Metrik)
+        render_custom_metric(sub_c3, "Harapan Hidup", "Usia (Tahun)", "harapan_hidup")
+        render_custom_metric(sub_c3, "Stunting", "% Balita", "stunting", is_inverse=True)
+        render_custom_metric(sub_c3, "Bansos", "Z-Score", "anggaran_bansos", is_absolute=True)
 
     with col_kanan:
-        # st.markdown("#### 📈 Peta Visualisasi & Eksplorasi Spasial")
-        
-        # Filter berada tepat di atas peta
+        st.markdown("#### 📈 Visualisasi & Eksplorasi Spasial")
         col_f1, col_f2 = st.columns(2)
         with col_f1:
-            provinsi_terpilih = st.multiselect("Filter Provinsi:", options=sorted(df_sim["provinsi"].unique()), key="prov_bayes", placeholder="Pilih Provinsi...")
+            provinsi_terpilih = st.multiselect("📍 Filter Provinsi:", options=sorted(df_sim["provinsi"].unique()), key="prov_bayes", placeholder="Pilih Provinsi...")
         with col_f2:
-            label_terpilih = st.multiselect("Filter Status:", options=sorted(df_sim["status_ketahanan"].unique()), key="label_bayes", placeholder="Pilih Status...")
+            label_terpilih = st.multiselect("🏷️ Filter Status:", options=sorted(df_sim["status_ketahanan"].unique()), key="label_bayes", placeholder="Pilih Status...")
             
         df_filtered_bayes = df_sim.copy()
         if provinsi_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["provinsi"].isin(provinsi_terpilih)]
@@ -310,38 +299,28 @@ def halaman_bayesian():
         if df_filtered_bayes.empty:
             st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
         else:
-            # Peta dirender di kolom kanan
             center_koor, zoom_val = get_map_view(provinsi_terpilih)
-            
             fig_map = px.choropleth_map(
                 df_filtered_bayes, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-                map_style="light", zoom=zoom_val, center=center_koor, opacity=0.8,
+                map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name="kab_kota", hover_data=["provinsi", "kemiskinan"] if "kemiskinan" in df_filtered_bayes.columns else ["provinsi"],
                 height=520 
             )
             fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(fig_map, use_container_width=True)     
+            st.plotly_chart(fig_map, use_container_width=True)
             
-        # Info Box Dampak Kebijakan diletakkan persis di bawah peta
         rentan_awal = (pred_awal == 0).sum()
         rentan_sim = (pred_sim == 0).sum()
         tahan_awal = (pred_awal == 2).sum()
         tahan_sim = (pred_sim == 2).sum()
         total_wilayah = len(df_clean)
 
-        if rentan_sim < rentan_awal:
-            pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
-        elif rentan_sim > rentan_awal:
-            pesan_rentan = f"⚠️ Waspada! Terdapat **{rentan_sim - rentan_awal} daerah baru** jatuh ke zona Rentan."
-        else:
-            pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
+        if rentan_sim < rentan_awal: pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
+        elif rentan_sim > rentan_awal: pesan_rentan = f"⚠️ Waspada! Terdapat **{rentan_sim - rentan_awal} daerah baru** jatuh ke zona Rentan."
+        else: pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
 
-        st.info(f"""
-        💡 **Dampak Kebijakan Nasional:**
-        * {pesan_rentan}
-        * Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.
-        """)
+        st.info(f"💡 **Dampak Kebijakan Nasional:**\n* {pesan_rentan}\n* Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.")
 # -----------------------------------------------------------------------------
 # 4. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK (COMPACT UI)
 # -----------------------------------------------------------------------------
@@ -459,7 +438,7 @@ def halaman_simulasi_lokal():
     # ==========================================
     # 4. KETERANGAN DAMPAK & METRIK BAWAH
     # ==========================================
-    st.markdown("### 📊 Ringkasan Dampak Intervensi")
+    # st.markdown("### 📊 Ringkasan Dampak Intervensi")
     
     # Alert Status Perubahan
     idx_awal = pred_awal_global[idx_kab]
