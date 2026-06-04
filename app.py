@@ -299,7 +299,7 @@ def halaman_bayesian():
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name="kab_kota", hover_data=["provinsi", "kemiskinan"] if "kemiskinan" in df_filtered_bayes.columns else ["provinsi"],
-                height=490 
+                height=520 
             )
             fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_map, use_container_width=True)
