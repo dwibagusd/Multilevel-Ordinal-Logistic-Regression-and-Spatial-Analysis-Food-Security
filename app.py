@@ -214,69 +214,78 @@ def halaman_bayesian():
         col.markdown(html_content, unsafe_allow_html=True)
 
     # st.markdown("#### 📊 Indikator Utama (Rata-Rata Nasional)")
+    # ==========================================
+    # PEMBAGIAN LAYOUT (2 KOLOM KIRI : 3 KOLOM KANAN)
+    # ==========================================
+    col_kiri, col_kanan = st.columns([2, 3])
     
-    # Baris 1
-    col_x1, col_x2, col_x3, col_x4, col_x5 = st.columns(5)
-    render_custom_metric(col_x1, "NCPR", "Rasio Pangan/Kapita", "ncpr")
-    render_custom_metric(col_x2, "Kemiskinan", "% Penduduk", "kemiskinan", is_inverse=True)
-    render_custom_metric(col_x3, "Pengeluaran Pangan", "% Total Belanja", "pengeluaran_pangan")
-    render_custom_metric(col_x4, "Tanpa Listrik", "% Rumah Tangga", "tanpa_listrik", is_inverse=True)
-    render_custom_metric(col_x5, "Tanpa Air Bersih", "% Rumah Tangga", "tanpa_air_bersih", is_inverse=True)
-    
-    # Baris 2
-    col_x6, col_x7, col_x8, col_x9, col_x10 = st.columns(5)
-    render_custom_metric(col_x6, "Lama Sekolah (Pr)", "Rata-rata Tahun", "lama_sekolah_perempuan")
-    render_custom_metric(col_x7, "Tenaga Kesehatan", "Rasio Perkapita", "tenaga_kesehatan")
-    render_custom_metric(col_x8, "Harapan Hidup", "Usia (Tahun)", "harapan_hidup")
-    render_custom_metric(col_x9, "Stunting", "% Balita", "stunting", is_inverse=True)
-    render_custom_metric(col_x10, "Bansos", "Z-Score Absolut", "anggaran_bansos", is_absolute=True)
-
-    st.write("---")
-    
-    rentan_awal = (pred_awal == 0).sum()
-    rentan_sim = (pred_sim == 0).sum()
-    tahan_awal = (pred_awal == 2).sum()
-    tahan_sim = (pred_sim == 2).sum()
-    total_wilayah = len(df_clean)
-
-    if rentan_sim < rentan_awal:
-        pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
-    elif rentan_sim > rentan_awal:
-        pesan_rentan = f"⚠️ Waspada! Terdapat **{rentan_sim - rentan_awal} daerah baru** jatuh ke zona Rentan."
-    else:
-        pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
-
-    st.info(f"""
-    💡 **Dampak Kebijakan Nasional:**
-    * {pesan_rentan}
-    * Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.
-    """)
-
-    st.markdown("#### 📈 Visualisasi & Eksplorasi Spasial")
-    
-    col_f1, col_f2 = st.columns(2)
-    with col_f1:
-        provinsi_terpilih = st.multiselect("📍 Filter Provinsi:", options=sorted(df_sim["provinsi"].unique()), key="prov_bayes", placeholder="Pilih Provinsi...")
-    with col_f2:
-        label_terpilih = st.multiselect("🏷️ Filter Status Ketahanan:", options=sorted(df_sim["status_ketahanan"].unique()), key="label_bayes", placeholder="Pilih Status...")
+    with col_kiri:
+        st.markdown("#### 📊 Rata-Rata Nasional")
         
-    df_filtered_bayes = df_sim.copy()
-    if provinsi_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["provinsi"].isin(provinsi_terpilih)]
-    if label_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["status_ketahanan"].isin(label_terpilih)]
+        # Grid 2 kolom di dalam kolom kiri agar metrik tertata rapi ke bawah
+        sub_c1, sub_c2 = st.columns(2)
+        
+        # Variabel Sisi Kiri
+        render_custom_metric(sub_c1, "NCPR", "Rasio Pangan/Kapita", "ncpr")
+        render_custom_metric(sub_c1, "Kemiskinan", "% Penduduk", "kemiskinan", is_inverse=True)
+        render_custom_metric(sub_c1, "Pengeluaran", "% Total Belanja", "pengeluaran_pangan")
+        render_custom_metric(sub_c1, "Tanpa Listrik", "% Rumah Tangga", "tanpa_listrik", is_inverse=True)
+        render_custom_metric(sub_c1, "Tanpa Air Bersih", "% Rumah Tangga", "tanpa_air_bersih", is_inverse=True)
+        
+        # Variabel Sisi Kanan
+        render_custom_metric(sub_c2, "Lama Sekolah (Pr)", "Rata-rata Tahun", "lama_sekolah_perempuan")
+        render_custom_metric(sub_c2, "Nakes", "Rasio Perkapita", "tenaga_kesehatan")
+        render_custom_metric(sub_c2, "Harapan Hidup", "Usia (Tahun)", "harapan_hidup")
+        render_custom_metric(sub_c2, "Stunting", "% Balita", "stunting", is_inverse=True)
+        render_custom_metric(sub_c2, "Bansos", "Z-Score Absolut", "anggaran_bansos", is_absolute=True)
 
-    if df_filtered_bayes.empty:
-        st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
-    else:
-        fig_map = px.choropleth_map(
-            df_filtered_bayes, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
-            color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-            map_style="basic", zoom=4, center={"lat": -2.5, "lon": 118}, opacity=0.8,
-            hover_name="kab_kota", hover_data=["provinsi", "kemiskinan"] if "kemiskinan" in df_filtered_bayes.columns else ["provinsi"],
-            height=500
-        )
-        fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(fig_map, width='stretch')
+    with col_kanan:
+        st.markdown("#### 📈 Peta Visualisasi & Eksplorasi Spasial")
+        
+        # Filter berada tepat di atas peta
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            provinsi_terpilih = st.multiselect("📍 Filter Provinsi:", options=sorted(df_sim["provinsi"].unique()), key="prov_bayes", placeholder="Pilih Provinsi...")
+        with col_f2:
+            label_terpilih = st.multiselect("🏷️ Filter Status:", options=sorted(df_sim["status_ketahanan"].unique()), key="label_bayes", placeholder="Pilih Status...")
+            
+        df_filtered_bayes = df_sim.copy()
+        if provinsi_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["provinsi"].isin(provinsi_terpilih)]
+        if label_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["status_ketahanan"].isin(label_terpilih)]
 
+        if df_filtered_bayes.empty:
+            st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
+        else:
+            # Peta dirender di kolom kanan
+            fig_map = px.choropleth_map(
+                df_filtered_bayes, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+                color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
+                map_style="basic", zoom=4.2, center={"lat": -2.5, "lon": 118}, opacity=0.8,
+                hover_name="kab_kota", hover_data=["provinsi", "kemiskinan"] if "kemiskinan" in df_filtered_bayes.columns else ["provinsi"],
+                height=520 # Tinggi disesuaikan agar seimbang dengan tumpukan metrik di kiri
+            )
+            fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+            st.plotly_chart(fig_map, use_container_width=True)
+            
+        # Info Box Dampak Kebijakan diletakkan persis di bawah peta
+        rentan_awal = (pred_awal == 0).sum()
+        rentan_sim = (pred_sim == 0).sum()
+        tahan_awal = (pred_awal == 2).sum()
+        tahan_sim = (pred_sim == 2).sum()
+        total_wilayah = len(df_clean)
+
+        if rentan_sim < rentan_awal:
+            pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
+        elif rentan_sim > rentan_awal:
+            pesan_rentan = f"⚠️ Waspada! Terdapat **{rentan_sim - rentan_awal} daerah baru** jatuh ke zona Rentan."
+        else:
+            pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
+
+        st.info(f"""
+        💡 **Dampak Kebijakan Nasional:**
+        * {pesan_rentan}
+        * Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.
+        """)
 # -----------------------------------------------------------------------------
 # 4. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK (COMPACT UI)
 # -----------------------------------------------------------------------------
