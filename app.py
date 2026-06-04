@@ -266,138 +266,159 @@ def halaman_bayesian():
     st.dataframe(df_filtered_bayes[kolom_penting], width='stretch', hide_index=True)
 
 # -----------------------------------------------------------------------------
-# 4. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK
+# 4. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK (COMPACT UI)
 # -----------------------------------------------------------------------------
 def halaman_simulasi_lokal():
-    st.sidebar.markdown("### 🎯 Simulasi Lokal")
-    st.sidebar.info("Halaman ini berfokus pada eksperimen perubahan nilai secara absolut (angka langsung) pada satu Kabupaten/Kota spesifik tanpa mengubah nilai nasional.")
-    
-    st.markdown("<h1 style='font-size: 3rem; margin-bottom: 0;'>Simulasi Kebijakan Spesifik</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;'>Filter status wilayah, pilih satu Kabupaten/Kota, ubah nilainya, dan lihat dampak langsungnya.</p>", unsafe_allow_html=True)
-
-    # Menghitung prediksi dasar (baseline) untuk semua wilayah agar bisa difilter
+    # Menghitung prediksi dasar (baseline) untuk semua wilayah
     pred_awal_global = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
     df_base = df_clean.copy()
     df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
 
+    # Dictionary Variabel
+    dict_variabel = {
+        "ncpr": "NCPR",
+        "kemiskinan": "Kemiskinan (%)",
+        "pengeluaran_pangan": "Pengeluaran Pangan (%)",
+        "tanpa_listrik": "Tanpa Listrik (%)",
+        "tanpa_air_bersih": "Tanpa Air Bersih (%)",
+        "lama_sekolah_perempuan": "Lama Sekolah Perempuan",
+        "tenaga_kesehatan": "Tenaga Kesehatan",
+        "harapan_hidup": "Harapan Hidup",
+        "stunting": "Stunting (%)",
+        "anggaran_bansos": "Anggaran Bansos (Z-Score)"
+    }
+
     # ==========================================
-    # 1. UI PEMILIHAN (FILTER DALAM FILTER)
+    # 1. KONTROL SIDEBAR (FILTER & INPUT)
     # ==========================================
-    st.markdown("#### 1. Filter & Pilih Wilayah Target")
-    col_w1, col_w2 = st.columns(2)
+    st.sidebar.markdown("### 🎯 Simulasi Lokal Spesifik")
     
-    with col_w1:
-        filter_status = st.selectbox(
-            "🔍 Filter Status Awal Wilayah:", 
-            options=["Semua Status", "Rentan", "Tahan", "Sangat Tahan"]
-        )
-        
-    # Logika Filter: Memperbarui daftar Kabupaten berdasarkan status yang dipilih
+    # Filter dalam Filter
+    filter_status = st.sidebar.selectbox(
+        "🔍 Filter Status Awal:", 
+        options=["Semua Status", "Rentan", "Tahan", "Sangat Tahan"]
+    )
+    
     if filter_status != "Semua Status":
         pilihan_kab = sorted(df_base[df_base["status_ketahanan"] == filter_status]["kab_kota"].unique())
     else:
         pilihan_kab = sorted(df_base["kab_kota"].unique())
         
-    with col_w2:
-        # Proteksi jika kebetulan tidak ada wilayah di status tersebut
-        if not pilihan_kab:
-            st.warning(f"⚠️ Tidak ada wilayah dengan status {filter_status} saat ini.")
-            st.stop()
-            
-        selected_kab = st.selectbox("📍 Pilih Kabupaten/Kota Target:", options=pilihan_kab)
+    if not pilihan_kab:
+        st.sidebar.warning(f"Tidak ada wilayah dengan status {filter_status}.")
+        st.stop()
         
+    selected_kab = st.sidebar.selectbox("📍 Pilih Kabupaten/Kota:", options=pilihan_kab)
     prov_terpilih = df_base[df_base["kab_kota"] == selected_kab]["provinsi"].values[0]
-    
-    # ==========================================
-    # 2. UI SKENARIO INTERVENSI
-    # ==========================================
-    st.markdown("#### 2. Skenario Intervensi Variabel")
-    dict_variabel = {
-        "NCPR": "ncpr",
-        "Kemiskinan (%)": "kemiskinan",
-        "Pengeluaran Pangan (%)": "pengeluaran_pangan",
-        "Tanpa Listrik (%)": "tanpa_listrik",
-        "Tanpa Air Bersih (%)": "tanpa_air_bersih",
-        "Lama Sekolah Perempuan": "lama_sekolah_perempuan",
-        "Tenaga Kesehatan": "tenaga_kesehatan",
-        "Harapan Hidup": "harapan_hidup",
-        "Stunting (%)": "stunting",
-        "Anggaran Bansos (Z-Score)": "anggaran_bansos"
-    }
-    
-    col_v1, col_v2 = st.columns(2)
-    with col_v1:
-        selected_var_label = st.selectbox("🎯 Pilih Variabel untuk Diintervensi:", options=list(dict_variabel.keys()))
-        selected_var_col = dict_variabel[selected_var_label]
-        
-    # Ambil index dan nilai saat ini dari dataset baseline
     idx_kab = df_base[df_base["kab_kota"] == selected_kab].index[0]
-    current_val = float(df_base.loc[idx_kab, selected_var_col])
+
+    # Inisialisasi Session State khusus untuk simulasi lokal agar nilai form dinamis
+    if 'kab_aktif' not in st.session_state:
+        st.session_state.kab_aktif = None
+
+    # Fungsi Reset Nilai
+    def reset_nilai_ke_awal():
+        for col in dict_variabel.keys():
+            st.session_state[f"sim_{col}"] = float(df_base.loc[idx_kab, col])
+
+    # Jika user mengganti kabupaten, otomatis reset nilai di form ke nilai baseline kabupaten baru
+    if st.session_state.kab_aktif != selected_kab:
+        st.session_state.kab_aktif = selected_kab
+        reset_nilai_ke_awal()
+
+    st.sidebar.write("---")
     
-    with col_v2:
-        new_val = st.number_input(f"✍️ Ketik Nilai Baru ({selected_var_label}):", value=current_val, step=1.0)
+    # Tombol Reset Manual
+    if st.sidebar.button("🔄 Reset ke Nilai Awal", use_container_width=True):
+        reset_nilai_ke_awal()
+
+    # Form Simulasi (Batch Input)
+    with st.sidebar.form("form_lokal"):
+        st.markdown("#### ✍️ Ubah Nilai Variabel")
+        st.caption("Ubah angka di bawah ini, lalu klik Simpan untuk memproses.")
         
-    st.write("---")
-    
+        # Looping untuk membuat seluruh input box tanpa harus memilih variabel dulu
+        for col, label in dict_variabel.items():
+            # Pastikan key ada di session state untuk menghindari error
+            if f"sim_{col}" not in st.session_state:
+                st.session_state[f"sim_{col}"] = float(df_base.loc[idx_kab, col])
+                
+            st.number_input(label, key=f"sim_{col}", step=1.0)
+            
+        submit_simpan = st.form_submit_button("💾 Simpan & Lihat Dampak", use_container_width=True)
+
     # ==========================================
-    # 3. PROSES PREDIKSI & DAMPAK LOKAL
+    # 2. PROSES DATA LOKAL (Berdasarkan Form)
     # ==========================================
     df_sim_local = df_base.copy()
-    df_sim_local.loc[idx_kab, selected_var_col] = new_val
     
-    # Hitung ulang prediksi dengan nilai yang baru
+    # Terapkan nilai dari form ke dalam dataframe simulasi
+    for col in dict_variabel.keys():
+        df_sim_local.loc[idx_kab, col] = st.session_state[f"sim_{col}"]
+        
     pred_sim_local = predict_ordinal_probs_pymc(df_sim_local, weights, df_clean)
     
     status_awal_str = df_base.loc[idx_kab, "status_ketahanan"]
     status_baru_str = status_map[pred_sim_local[idx_kab]]
-    
-    st.markdown("### 📊 Analisis Dampak Perubahan")
-    
-    col_d1, col_d2 = st.columns([3, 7])
-    
-    with col_d1:
-        st.metric(f"Nilai Awal {selected_var_label}", f"{current_val:.2f}")
-        
-        # Logika teks keterangan membandingkan Index Kategori (0=Rentan, 1=Tahan, 2=Sangat Tahan)
-        idx_awal = pred_awal_global[idx_kab]
-        idx_baru = pred_sim_local[idx_kab]
-        
-        if idx_baru > idx_awal: 
-            delta_str = "Status Meningkat"
-            st.metric("Prediksi Status Baru", status_baru_str, delta=delta_str, delta_color="normal")
-            st.success(f"🎉 **Sukses!** Intervensi nilai **{selected_var_label}** menjadi **{new_val:.2f}** berhasil meningkatkan status **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
-            
-        elif idx_baru < idx_awal: 
-            delta_str = "Status Menurun"
-            st.metric("Prediksi Status Baru", status_baru_str, delta=delta_str, delta_color="inverse")
-            st.error(f"⚠️ **Waspada!** Perubahan nilai **{selected_var_label}** menjadi **{new_val:.2f}** menyebabkan status **{selected_kab}** turun dari **{status_awal_str}** menjadi **{status_baru_str}**.")
-            
-        else:
-            delta_str = "Status Stagnan"
-            st.metric("Prediksi Status Baru", status_baru_str, delta=delta_str, delta_color="off")
-            if current_val != new_val:
-                st.info(f"💡 **Informasi:** Intervensi nilai menjadi **{new_val:.2f}** belum cukup kuat untuk mengubah status ketahanan pangan (Tetap **{status_awal_str}**). Cobalah ubah angka dengan jarak yang lebih signifikan.")
-            else:
-                st.info("Ketikkan angka baru pada kotak di atas untuk memulai simulasi.")
+    df_sim_local["status_ketahanan"] = pd.Series(pred_sim_local).map(status_map)
 
     # ==========================================
-    # 4. PEMBUATAN PETA FOKUS PROVINSI
+    # 3. KONTEN UTAMA (PETA DI ATAS)
     # ==========================================
-    with col_d2:
-        df_sim_local["status_ketahanan"] = pd.Series(pred_sim_local).map(status_map)
+    st.markdown("<h1 style='font-size: 3rem; margin-bottom: 0;'>Simulasi Kebijakan Spesifik</h1>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;'>Fokus Peta: <b>Provinsi {prov_terpilih}</b> (Daerah Target: <b>{selected_kab}</b>)</p>", unsafe_allow_html=True)
+
+    # PETA BERADA DI PALING ATAS
+    df_map_local = df_sim_local[df_sim_local["provinsi"] == prov_terpilih]
+    fig_map_local = px.choropleth_map(
+        df_map_local, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+        color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
+        map_style="basic", zoom=5, center={"lat": -2.5, "lon": 118}, opacity=0.9, 
+        hover_name="kab_kota", hover_data={"status_ketahanan": True}, height=450
+    )
+    fig_map_local.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+    st.plotly_chart(fig_map_local, use_container_width=True)
+
+    # ==========================================
+    # 4. KETERANGAN DAMPAK & METRIK BAWAH
+    # ==========================================
+    st.markdown("### 📊 Ringkasan Dampak Intervensi")
+    
+    # Alert Status Perubahan
+    idx_awal = pred_awal_global[idx_kab]
+    idx_baru = pred_sim_local[idx_kab]
+    
+    if idx_baru > idx_awal: 
+        st.success(f"🎉 **Dampak Positif!** Perubahan variabel pada form simulasi berhasil meningkatkan status **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
+    elif idx_baru < idx_awal: 
+        st.error(f"⚠️ **Waspada!** Perubahan variabel menyebabkan penurunan ketahanan pangan di **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
+    else:
+        st.info(f"💡 **Stagnan:** Nilai yang Anda terapkan belum cukup untuk mengubah status ketahanan pangan **{selected_kab}** (Tetap **{status_awal_str}**).")
+
+    st.write("---")
+    st.markdown(f"**Detail Perubahan Variabel di {selected_kab}:**")
+    
+    # Membuat 2 Baris berisi 5 Kolom agar 10 Variabel tampil cantik
+    col_v1, col_v2, col_v3, col_v4, col_v5 = st.columns(5)
+    col_v6, col_v7, col_v8, col_v9, col_v10 = st.columns(5)
+    
+    kolom_list = [col_v1, col_v2, col_v3, col_v4, col_v5, col_v6, col_v7, col_v8, col_v9, col_v10]
+    
+    # Menggambar metrik untuk setiap variabel
+    for i, (col_key, label) in enumerate(dict_variabel.items()):
+        val_awal = float(df_base.loc[idx_kab, col_key])
+        val_sim = st.session_state[f"sim_{col_key}"]
+        delta = val_sim - val_awal
         
-        # Filter peta HANYA untuk provinsi dari kabupaten terpilih agar lebih fokus
-        df_map_local = df_sim_local[df_sim_local["provinsi"] == prov_terpilih]
+        # Logika reverse color untuk indikator negatif (misal: Kemiskinan naik = merah/inverse)
+        is_inverse = col_key in ["kemiskinan", "tanpa_listrik", "tanpa_air_bersih", "stunting"]
         
-        st.markdown(f"**🗺️ Peta Interaktif (Fokus Provinsi: {prov_terpilih})**")
-        fig_map_local = px.choropleth_map(
-            df_map_local, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
-            color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-            map_style="basic", zoom=4.5, center={"lat": -2.5, "lon": 118}, opacity=0.9, 
-            hover_name="kab_kota", hover_data=["provinsi", selected_var_col], height=420
+        kolom_list[i].metric(
+            label=label, 
+            value=f"{val_sim:.2f}", 
+            delta=f"{delta:+.2f}" if delta != 0 else "0.00", 
+            delta_color="inverse" if is_inverse else "normal"
         )
-        fig_map_local.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(fig_map_local, use_container_width=True)
 
 # -----------------------------------------------------------------------------
 # 4. FUNGSI HALAMAN 2: SPATIAL AUTOCORRELATION
