@@ -516,6 +516,24 @@ def halaman_spasial():
         """
         st.markdown(html_zscore, unsafe_allow_html=True)
 
+        if moran.p_sim < 0.05:
+            if moran.z_sim > 0:
+                kesimpulan = "Clustered"
+                delta_kesimpulan = "Mengelompok"
+                warna_kesimpulan = "delta-positive"
+            else:
+                kesimpulan = "Dispersed"
+                delta_kesimpulan = "Menyebar"
+                warna_kesimpulan = "delta-negative"
+        else:
+            kesimpulan = "Random"
+            delta_kesimpulan = "Acak (Tidak Signifikan)"
+            warna_kesimpulan = "delta-neutral"
+            
+        html_kesimpulan = f"""
+        <div class="metric-card"><div class="metric-title">Kesimpulan Pola</div><div class="metric-unit">Distribusi Spasial</div>
+        <div class="metric-value">{kesimpulan}</div><di
+
     with col_kanan:
         # st.markdown("#### 🗺️ Peta Local Moran's I (LISA)")
         warna_cluster = {'HH (Hotspot)': '#16a34a', 'LL (Coldspot)': '#dc2626', 'HL (Outlier)': '#86efac', 'LH (Outlier)': '#fca5a5', 'Tidak Signifikan (ns)': '#e5e7eb'}
