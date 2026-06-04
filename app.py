@@ -316,7 +316,7 @@ def halaman_bayesian():
             fig_map = px.choropleth_map(
                 df_filtered_bayes, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-                map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.8,
+                map_style="light", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name="kab_kota", hover_data=["provinsi", "kemiskinan"] if "kemiskinan" in df_filtered_bayes.columns else ["provinsi"],
                 height=520 
             )
@@ -450,7 +450,7 @@ def halaman_simulasi_lokal():
     fig_map_local = px.choropleth_map(
         df_map_local, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
         color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-        map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
+        map_style="light", zoom=zoom_val, center=center_koor, opacity=0.9, 
         hover_name="kab_kota", hover_data={"status_ketahanan": True}, height=420
     )
     fig_map_local.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
@@ -602,7 +602,7 @@ def halaman_spasial():
             
         fig_lisa = px.choropleth_map(
             df_filtered_spasial, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
-            color="cluster_label", color_discrete_map=warna_cluster, map_style="basic", zoom=zoom_val, 
+            color="cluster_label", color_discrete_map=warna_cluster, map_style="light", zoom=zoom_val, 
             center=center_koor, opacity=0.9, hover_name="kab_kota", 
             hover_data={"ikp": True, "cluster_label": False}, height=550
         )
