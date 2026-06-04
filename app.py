@@ -260,29 +260,25 @@ def halaman_bayesian():
     # ==========================================
     # PEMBAGIAN LAYOUT (2 KOLOM KIRI : 3 KOLOM KANAN)
     # ==========================================
-    col_kiri, col_kanan = st.columns([4.5, 5.5])
+    col_kiri, col_kanan = st.columns([3, 7])
     
     with col_kiri:
         # st.markdown("#### 📊 Rata-Rata Nasional")
         
         # Grid 3 kolom di dalam sisi kiri
-        sub_c1, sub_c2, sub_c3 = st.columns(3)
+        sub_c1, sub_c2 = st.columns(2)
         
-        # Sisi Kiri (Kolom 1: 4 Metrik)
         render_custom_metric(sub_c1, "NCPR", "Pangan/Kapita", "ncpr")
         render_custom_metric(sub_c1, "Kemiskinan", "% Penduduk", "kemiskinan", is_inverse=True)
         render_custom_metric(sub_c1, "Pengeluaran", "% Belanja", "pengeluaran_pangan")
         render_custom_metric(sub_c1, "Tanpa Listrik", "% Rumah Tangga", "tanpa_listrik", is_inverse=True)
+        render_custom_metric(sub_c1, "Tanpa Air", "% Rumah Tangga", "tanpa_air_bersih", is_inverse=True)
         
-        # Tengah (Kolom 2: 3 Metrik)
-        render_custom_metric(sub_c2, "Tanpa Air", "% Rumah Tangga", "tanpa_air_bersih", is_inverse=True)
         render_custom_metric(sub_c2, "Lama Sekolah", "Rata-rata Tahun", "lama_sekolah_perempuan")
         render_custom_metric(sub_c2, "Nakes", "Rasio Perkapita", "tenaga_kesehatan")
-        
-        # Sisi Kanan (Kolom 3: 3 Metrik)
-        render_custom_metric(sub_c3, "Harapan Hidup", "Usia (Tahun)", "harapan_hidup")
-        render_custom_metric(sub_c3, "Stunting", "% Balita", "stunting", is_inverse=True)
-        render_custom_metric(sub_c3, "Bansos", "Z-Score", "anggaran_bansos", is_absolute=True)
+        render_custom_metric(sub_c2, "Harapan Hidup", "Usia (Tahun)", "harapan_hidup")
+        render_custom_metric(sub_c2, "Stunting", "% Balita", "stunting", is_inverse=True)
+        render_custom_metric(sub_c2, "Bansos", "Z-Score", "anggaran_bansos", is_absolute=True)
 
     with col_kanan:
         # st.markdown("#### 📈 Visualisasi & Eksplorasi Spasial")
