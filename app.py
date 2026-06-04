@@ -285,11 +285,6 @@ def halaman_bayesian():
 
     with col_kanan:
         # st.markdown("#### 📈 Visualisasi & Eksplorasi Spasial")
-        col_f1, col_f2 = st.columns(2)
-        with col_f1:
-            provinsi_terpilih = st.multiselect("Filter Provinsi:", options=sorted(df_sim["provinsi"].unique()), key="prov_bayes", placeholder="Pilih Provinsi...")
-        with col_f2:
-            label_terpilih = st.multiselect("Filter Status:", options=sorted(df_sim["status_ketahanan"].unique()), key="label_bayes", placeholder="Pilih Status...")
             
         df_filtered_bayes = df_sim.copy()
         if provinsi_terpilih: df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["provinsi"].isin(provinsi_terpilih)]
