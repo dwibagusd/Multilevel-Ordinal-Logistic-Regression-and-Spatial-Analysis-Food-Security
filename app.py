@@ -476,18 +476,13 @@ def halaman_simulasi_lokal():
 # 4. FUNGSI HALAMAN 2: SPATIAL AUTOCORRELATION
 # -----------------------------------------------------------------------------
 def halaman_spasial():
-    # Menggunakan df_clean karena analisis spasial menggunakan IKP murni (tidak terpengaruh What-If slider)
     df_spasial = df_clean.copy()
-    
-    if 'ikp' not in df_spasial.columns:
-        st.error("Variabel 'ikp' tidak ditemukan di dataset.")
-        st.stop()
+    if 'ikp' not in df_spasial.columns: st.error("Variabel 'ikp' tidak ditemukan di dataset."); st.stop()
         
     y_spasial = df_spasial['ikp'].values
     moran = Moran(y_spasial, w_spasial)
     moran_loc = Moran_Local(y_spasial, w_spasial)
 
-    # Identifikasi Kluster Spasial
     signifikan = moran_loc.p_sim < 0.05
     kuadran = moran_loc.q
     
@@ -497,97 +492,76 @@ def halaman_spasial():
     df_spasial.loc[signifikan & (kuadran == 4), 'cluster_label'] = 'HL (Outlier)'
     df_spasial.loc[signifikan & (kuadran == 2), 'cluster_label'] = 'LH (Outlier)'
 
-    # ==========================================
-    # SIDEBAR KHUSUS HALAMAN SPASIAL
-    # ==========================================
-    # Kita pindahkan filter spasial ke sidebar agar konten utama lebih bersih!
-    st.sidebar.markdown("### :material/filter_alt: Filter Area Spasial")
+    st.sidebar.markdown("### 🔍 Filter Area Spasial")
     provinsi_terpilih_spasial = st.sidebar.multiselect("Pilih Provinsi:", options=sorted(df_spasial["provinsi"].unique()), key="prov_spasial", placeholder="Semua Provinsi")
     kluster_terpilih = st.sidebar.multiselect("Pilih Kluster LISA:", options=sorted(df_spasial["cluster_label"].unique()), key="kluster_spasial", placeholder="Semua Kluster")
-    
     st.sidebar.write("---")
     st.sidebar.info("Gunakan filter di atas untuk mengisolasi titik Hotspot/Coldspot pada provinsi tertentu di peta utama.")
 
-    # ==========================================
-    # KONTEN UTAMA HALAMAN SPASIAL
-    # ==========================================
     st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Spatial Autocorrelation</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Eksplorasi autokorelasi menggunakan <b>Global & Local Moran's I (LISA)</b>.</p>", unsafe_allow_html=True)
     
-    # Dibagi menjadi 4 kolom agar semua metrik sejajar di atas peta
-    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    
-    html_moran = f"""
-    <div class="metric-card">
-        <div class="metric-title">Global Moran's I Index</div>
-        <div class="metric-unit">Indeks Autokorelasi</div>
-        <div class="metric-value">{moran.I:.4f}</div>
-        <div class="metric-delta {'delta-positive' if moran.I > 0 else 'delta-negative'}">{'Korelasi Positif' if moran.I > 0 else 'Dispersi'}</div>
-    </div>
-    """
-    col_m1.markdown(html_moran, unsafe_allow_html=True)
-    
-    html_pval = f"""
-    <div class="metric-card">
-        <div class="metric-title">P-Value Signifikansi</div>
-        <div class="metric-unit">Uji Permutasi</div>
-        <div class="metric-value">{moran.p_sim:.4f}</div>
-        <div class="metric-delta {'delta-positive' if moran.p_sim < 0.05 else 'delta-neutral'}">{'Signifikan (<0.05)' if moran.p_sim < 0.05 else 'Tidak Signifikan'}</div>
-    </div>
-    """
-    col_m2.markdown(html_pval, unsafe_allow_html=True)
-
-    html_ei = f"""
-    <div class="metric-card">
-        <div class="metric-title">Expected Index</div>
-        <div class="metric-unit">Nilai Harapan (Acak)</div>
-        <div class="metric-value">{moran.EI:.4f}</div>
-        <div class="metric-delta delta-neutral">Batas Nol Spasial</div>
-    </div>
-    """
-    col_m3.markdown(html_ei, unsafe_allow_html=True)
-
-    html_zscore = f"""
-    <div class="metric-card">
-        <div class="metric-title">Z-Score</div>
-        <div class="metric-unit">Standar Deviasi</div>
-        <div class="metric-value">{moran.z_sim:.4f}</div>
-        <div class="metric-delta {'delta-positive' if abs(moran.z_sim) >= 1.96 else 'delta-neutral'}">{'Signifikan (> ±1.96)' if abs(moran.z_sim) >= 1.96 else 'Tidak Kuat'}</div>
-    </div>
-    """
-    col_m4.markdown(html_zscore, unsafe_allow_html=True)
-        
-    st.markdown("### Peta Local Moran's I (LISA)")
-    
-    # Filter Data berdasarkan Sidebar
     df_filtered_spasial = df_spasial.copy()
     if provinsi_terpilih_spasial: df_filtered_spasial = df_filtered_spasial[df_filtered_spasial["provinsi"].isin(provinsi_terpilih_spasial)]
     if kluster_terpilih: df_filtered_spasial = df_filtered_spasial[df_filtered_spasial["cluster_label"].isin(kluster_terpilih)]
 
-    warna_cluster = {
-        'HH (Hotspot)': '#16a34a', 'LL (Coldspot)': '#dc2626',
-        'HL (Outlier)': '#86efac', 'LH (Outlier)': '#fca5a5',
-        'Tidak Signifikan (ns)': '#e5e7eb'
-    }
+    # ==========================================
+    # PEMBAGIAN LAYOUT SPASIAL (1 KOLOM KIRI : PETA KANAN)
+    # Ratio [1, 3] berarti 25% Kiri dan 75% Kanan
+    # ==========================================
+    col_kiri, col_kanan = st.columns([1, 3])
     
-    if df_filtered_spasial.empty:
-        st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
-    else:
-        center_koor, zoom_val = get_map_view(provinsi_terpilih_spasial)
+    with col_kiri:
+        st.markdown("#### 🌍 Indikator Global")
+        
+        # Keempat indikator disusun rapi secara vertikal di 1 kolom
+        html_moran = f"""
+        <div class="metric-card"><div class="metric-title">Global Moran's I Index</div><div class="metric-unit">Indeks Autokorelasi</div>
+        <div class="metric-value">{moran.I:.4f}</div><div class="metric-delta {'delta-positive' if moran.I > 0 else 'delta-negative'}">{'Korelasi Positif' if moran.I > 0 else 'Dispersi'}</div></div>
+        """
+        st.markdown(html_moran, unsafe_allow_html=True)
+        
+        html_pval = f"""
+        <div class="metric-card"><div class="metric-title">P-Value Signifikansi</div><div class="metric-unit">Uji Permutasi</div>
+        <div class="metric-value">{moran.p_sim:.4f}</div><div class="metric-delta {'delta-positive' if moran.p_sim < 0.05 else 'delta-neutral'}">{'Signifikan (<0.05)' if moran.p_sim < 0.05 else 'Tidak Signifikan'}</div></div>
+        """
+        st.markdown(html_pval, unsafe_allow_html=True)
+
+        html_ei = f"""
+        <div class="metric-card"><div class="metric-title">Expected Index</div><div class="metric-unit">Nilai Harapan (Acak)</div>
+        <div class="metric-value">{moran.EI:.4f}</div><div class="metric-delta delta-neutral">Batas Nol Spasial</div></div>
+        """
+        st.markdown(html_ei, unsafe_allow_html=True)
+
+        html_zscore = f"""
+        <div class="metric-card"><div class="metric-title">Z-Score</div><div class="metric-unit">Standar Deviasi</div>
+        <div class="metric-value">{moran.z_sim:.4f}</div><div class="metric-delta {'delta-positive' if abs(moran.z_sim) >= 1.96 else 'delta-neutral'}">{'Signifikan (> ±1.96)' if abs(moran.z_sim) >= 1.96 else 'Tidak Kuat'}</div></div>
+        """
+        st.markdown(html_zscore, unsafe_allow_html=True)
+
+    with col_kanan:
+        st.markdown("#### 🗺️ Peta Local Moran's I (LISA)")
+        warna_cluster = {'HH (Hotspot)': '#16a34a', 'LL (Coldspot)': '#dc2626', 'HL (Outlier)': '#86efac', 'LH (Outlier)': '#fca5a5', 'Tidak Signifikan (ns)': '#e5e7eb'}
+        
+        if df_filtered_spasial.empty:
+            st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
+        else:
+            center_koor, zoom_val = get_map_view(provinsi_terpilih_spasial)
             
-        fig_lisa = px.choropleth_map(
-            df_filtered_spasial, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
-            color="cluster_label", color_discrete_map=warna_cluster, map_style="light", zoom=zoom_val, 
-            center=center_koor, opacity=0.9, hover_name="kab_kota", 
-            hover_data={"ikp": True, "cluster_label": False}, height=550
-        )
-        fig_lisa.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(fig_lisa, use_container_width=True)
+            fig_lisa = px.choropleth_map(
+                df_filtered_spasial, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+                color="cluster_label", color_discrete_map=warna_cluster, map_style="basic", zoom=zoom_val, 
+                center=center_koor, opacity=0.9, hover_name="kab_kota", 
+                hover_data={"ikp": True, "cluster_label": False}, 
+                height=530 # Tinggi disesuaikan agar sejajar dengan 4 metrik di sebelah kiri
+            )
+            fig_lisa.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+            st.plotly_chart(fig_lisa, use_container_width=True)
 
-    st.subheader("Raw Data")
+    st.write("---")
+    st.subheader("📋 Raw Data Kluster Spasial")
     kolom_spasial = ["kab_kota", "provinsi", "cluster_label", "ikp"]
-    st.dataframe(df_filtered_spasial[kolom_spasial], width='stretch', hide_index=True)
-
+    st.dataframe(df_filtered_spasial[kolom_spasial], use_container_width=True, hide_index=True)
 
 # -----------------------------------------------------------------------------
 # 5. SETUP NAVIGATION & EKSEKUSI
