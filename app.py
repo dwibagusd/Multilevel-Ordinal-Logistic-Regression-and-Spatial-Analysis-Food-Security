@@ -498,8 +498,8 @@ def halaman_spasial():
     st.sidebar.write("---")
     st.sidebar.info("Gunakan filter di atas untuk mengisolasi titik Hotspot/Coldspot pada provinsi tertentu di peta utama.")
 
-    st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Spatial Autocorrelation</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Eksplorasi autokorelasi menggunakan <b>Global & Local Moran's I (LISA)</b>.</p>", unsafe_allow_html=True)
+    # st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Spatial Autocorrelation</h1>", unsafe_allow_html=True)
+    # st.markdown("<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Eksplorasi autokorelasi menggunakan <b>Global & Local Moran's I (LISA)</b>.</p>", unsafe_allow_html=True)
     
     df_filtered_spasial = df_spasial.copy()
     if provinsi_terpilih_spasial: df_filtered_spasial = df_filtered_spasial[df_filtered_spasial["provinsi"].isin(provinsi_terpilih_spasial)]
@@ -512,7 +512,7 @@ def halaman_spasial():
     col_kiri, col_kanan = st.columns([2, 8])
     
     with col_kiri:
-        st.markdown("#### 🌍 Indikator Global")
+        # st.markdown("#### 🌍 Indikator Global")
         
         # Keempat indikator disusun rapi secara vertikal di 1 kolom
         html_moran = f"""
@@ -540,7 +540,7 @@ def halaman_spasial():
         st.markdown(html_zscore, unsafe_allow_html=True)
 
     with col_kanan:
-        st.markdown("#### 🗺️ Peta Local Moran's I (LISA)")
+        # st.markdown("#### 🗺️ Peta Local Moran's I (LISA)")
         warna_cluster = {'HH (Hotspot)': '#16a34a', 'LL (Coldspot)': '#dc2626', 'HL (Outlier)': '#86efac', 'LH (Outlier)': '#fca5a5', 'Tidak Signifikan (ns)': '#e5e7eb'}
         
         if df_filtered_spasial.empty:
