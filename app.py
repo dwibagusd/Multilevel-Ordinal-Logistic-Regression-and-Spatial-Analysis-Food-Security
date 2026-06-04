@@ -218,6 +218,8 @@ def halaman_bayesian():
     df_sim["lama_sekolah_perempuan"] = (df_clean["lama_sekolah_perempuan"] * (1 + sim_lama_sekolah_perempuan / 100)).clip(0, 18)
     df_sim["anggaran_bansos"] = df_clean["anggaran_bansos"] + sim_bansos
 
+    st.sidebar.button("Reset", on_click=reset_simulasi, width='stretch')
+
     pred_awal = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
     pred_sim = predict_ordinal_probs_pymc(df_sim, weights, df_clean)
 
