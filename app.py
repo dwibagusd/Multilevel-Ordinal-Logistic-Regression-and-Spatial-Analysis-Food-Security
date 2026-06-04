@@ -321,40 +321,30 @@ def halaman_bayesian():
 # 4. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK (COMPACT UI)
 # -----------------------------------------------------------------------------
 def halaman_simulasi_lokal():
-    # Menghitung prediksi dasar (baseline) untuk semua wilayah
     pred_awal_global = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
     df_base = df_clean.copy()
     df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
 
-    # Dictionary Variabel
-    dict_variabel = {
-        "ncpr": "NCPR",
-        "kemiskinan": "Kemiskinan (%)",
-        "pengeluaran_pangan": "Pengeluaran Pangan (%)",
-        "tanpa_listrik": "Tanpa Listrik (%)",
-        "tanpa_air_bersih": "Tanpa Air Bersih (%)",
-        "lama_sekolah_perempuan": "Lama Sekolah Perempuan",
-        "tenaga_kesehatan": "Tenaga Kesehatan",
-        "harapan_hidup": "Harapan Hidup",
-        "stunting": "Stunting (%)",
-        "anggaran_bansos": "Anggaran Bansos (Z-Score)"
+    # Dictionary ini sekarang berisi (Label_Pendek, Satuan) agar muat di Sidebar & Metric Card
+    dict_variabel_lokal = {
+        "ncpr": ("NCPR", "Pangan/Kapita"), 
+        "kemiskinan": ("Kemiskinan", "% Penduduk"), 
+        "pengeluaran_pangan": ("Pengeluaran", "% Belanja"),
+        "tanpa_listrik": ("Tanpa Listrik", "% Rumah Tangga"), 
+        "tanpa_air_bersih": ("Tanpa Air", "% Rumah Tangga"),
+        "lama_sekolah_perempuan": ("Lama Sekolah", "Rata-rata Tahun"), 
+        "tenaga_kesehatan": ("Nakes", "Rasio Perkapita"),
+        "harapan_hidup": ("Harapan Hidup", "Usia (Tahun)"), 
+        "stunting": ("Stunting", "% Balita"), 
+        "anggaran_bansos": ("Bansos", "Z-Score")
     }
 
-    # ==========================================
-    # 1. KONTROL SIDEBAR (FILTER & INPUT)
-    # ==========================================
     st.sidebar.markdown("### 🎯 Simulasi Lokal Spesifik")
-    
-    # Filter dalam Filter
-    filter_status = st.sidebar.selectbox(
-        "🔍 Filter Status Awal:", 
-        options=["Semua Status", "Rentan", "Tahan", "Sangat Tahan"]
-    )
+    filter_status = st.sidebar.selectbox("🔍 Filter Status Awal:", options=["Semua Status", "Rentan", "Tahan", "Sangat Tahan"])
     
     if filter_status != "Semua Status":
         pilihan_kab = sorted(df_base[df_base["status_ketahanan"] == filter_status]["kab_kota"].unique())
-    else:
-        pilihan_kab = sorted(df_base["kab_kota"].unique())
+    else: pilihan_kab = sorted(df_base["kab_kota"].unique())
         
     if not pilihan_kab:
         st.sidebar.warning(f"Tidak ada wilayah dengan status {filter_status}.")
@@ -364,48 +354,27 @@ def halaman_simulasi_lokal():
     prov_terpilih = df_base[df_base["kab_kota"] == selected_kab]["provinsi"].values[0]
     idx_kab = df_base[df_base["kab_kota"] == selected_kab].index[0]
 
-    # Inisialisasi Session State khusus untuk simulasi lokal agar nilai form dinamis
-    if 'kab_aktif' not in st.session_state:
-        st.session_state.kab_aktif = None
+    if 'kab_aktif' not in st.session_state: st.session_state.kab_aktif = None
 
-    # Fungsi Reset Nilai
     def reset_nilai_ke_awal():
-        for col in dict_variabel.keys():
-            st.session_state[f"sim_{col}"] = float(df_base.loc[idx_kab, col])
+        for col in dict_variabel_lokal.keys(): st.session_state[f"sim_{col}"] = float(df_base.loc[idx_kab, col])
 
-    # Jika user mengganti kabupaten, otomatis reset nilai di form ke nilai baseline kabupaten baru
     if st.session_state.kab_aktif != selected_kab:
         st.session_state.kab_aktif = selected_kab
         reset_nilai_ke_awal()
 
     st.sidebar.write("---")
-    
-    # Tombol Reset Manual
-    if st.sidebar.button("🔄 Reset ke Nilai Awal", use_container_width=True):
-        reset_nilai_ke_awal()
+    if st.sidebar.button("🔄 Reset ke Nilai Awal", use_container_width=True): reset_nilai_ke_awal()
 
-    # Form Simulasi (Batch Input)
     with st.sidebar.form("form_lokal"):
-        st.caption("Ubah angka di bawah ini, lalu klik Simpan untuk memproses.")
-        
-        # Looping untuk membuat seluruh input box tanpa harus memilih variabel dulu
-        for col, label in dict_variabel.items():
-            # Pastikan key ada di session state untuk menghindari error
-            if f"sim_{col}" not in st.session_state:
-                st.session_state[f"sim_{col}"] = float(df_base.loc[idx_kab, col])
-                
-            st.number_input(label, key=f"sim_{col}", step=1.0)
-            
+        st.markdown("#### ✍️ Ubah Nilai Variabel")
+        for col, (label, unit) in dict_variabel_lokal.items():
+            if f"sim_{col}" not in st.session_state: st.session_state[f"sim_{col}"] = float(df_base.loc[idx_kab, col])
+            st.number_input(f"{label} ({unit})", key=f"sim_{col}", step=1.0)
         submit_simpan = st.form_submit_button("💾 Simpan & Lihat Dampak", use_container_width=True)
 
-    # ==========================================
-    # 2. PROSES DATA LOKAL (Berdasarkan Form)
-    # ==========================================
     df_sim_local = df_base.copy()
-    
-    # Terapkan nilai dari form ke dalam dataframe simulasi
-    for col in dict_variabel.keys():
-        df_sim_local.loc[idx_kab, col] = st.session_state[f"sim_{col}"]
+    for col in dict_variabel_lokal.keys(): df_sim_local.loc[idx_kab, col] = st.session_state[f"sim_{col}"]
         
     pred_sim_local = predict_ordinal_probs_pymc(df_sim_local, weights, df_clean)
     
@@ -413,65 +382,75 @@ def halaman_simulasi_lokal():
     status_baru_str = status_map[pred_sim_local[idx_kab]]
     df_sim_local["status_ketahanan"] = pd.Series(pred_sim_local).map(status_map)
 
-    # ==========================================
-    # 3. KONTEN UTAMA (PETA DI ATAS)
-    # ==========================================
     st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Simulasi Kebijakan Spesifik</h1>", unsafe_allow_html=True)
     st.markdown(f"<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Fokus Peta: <b>Provinsi {prov_terpilih}</b> (Daerah Target: <b>{selected_kab}</b>)</p>", unsafe_allow_html=True)
 
-    # PETA BERADA DI PALING ATAS
-    df_map_local = df_sim_local[df_sim_local["provinsi"] == prov_terpilih]
-    center_koor, zoom_val = get_map_view([prov_terpilih])
-    fig_map_local = px.choropleth_map(
-        df_map_local, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
-        color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-        map_style="light", zoom=zoom_val, center=center_koor, opacity=0.9, 
-        hover_name="kab_kota", hover_data={"status_ketahanan": True}, height=420
-    )
-    fig_map_local.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
-    st.plotly_chart(fig_map_local, use_container_width=True)
-
-    # ==========================================
-    # 4. KETERANGAN DAMPAK & METRIK BAWAH
-    # ==========================================
-    # st.markdown("### 📊 Ringkasan Dampak Intervensi")
-    
-    # Alert Status Perubahan
+    # ------------------ KETERANGAN DAMPAK ------------------
     idx_awal = pred_awal_global[idx_kab]
     idx_baru = pred_sim_local[idx_kab]
     
-    if idx_baru > idx_awal: 
-        st.success(f"🎉 **Dampak Positif!** Perubahan variabel pada form simulasi berhasil meningkatkan status **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
-    elif idx_baru < idx_awal: 
-        st.error(f"⚠️ **Waspada!** Perubahan variabel menyebabkan penurunan ketahanan pangan di **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
-    else:
-        st.info(f"💡 **Stagnan:** Nilai yang Anda terapkan belum cukup untuk mengubah status ketahanan pangan **{selected_kab}** (Tetap **{status_awal_str}**).")
+    if idx_baru > idx_awal: st.success(f"🎉 **Dampak Positif!** Variabel simulasi berhasil meningkatkan status **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
+    elif idx_baru < idx_awal: st.error(f"⚠️ **Waspada!** Perubahan variabel menyebabkan penurunan ketahanan pangan di **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
+    else: st.info(f"💡 **Stagnan:** Nilai yang diterapkan belum merubah status ketahanan pangan **{selected_kab}** (Tetap **{status_awal_str}**).")
 
-    # st.write("---")
-    st.markdown(f"**Detail Perubahan Variabel di {selected_kab}:**")
+    # ------------------ PEMBAGIAN LAYOUT 3 : 7 ------------------
+    col_kiri, col_kanan = st.columns([3, 7])
     
-    # Membuat 2 Baris berisi 5 Kolom agar 10 Variabel tampil cantik
-    col_v1, col_v2, col_v3, col_v4, col_v5 = st.columns(5)
-    col_v6, col_v7, col_v8, col_v9, col_v10 = st.columns(5)
-    
-    kolom_list = [col_v1, col_v2, col_v3, col_v4, col_v5, col_v6, col_v7, col_v8, col_v9, col_v10]
-    
-    # Menggambar metrik untuk setiap variabel
-    for i, (col_key, label) in enumerate(dict_variabel.items()):
-        val_awal = float(df_base.loc[idx_kab, col_key])
-        val_sim = st.session_state[f"sim_{col_key}"]
-        delta = val_sim - val_awal
+    with col_kiri:
+        st.markdown("#### 📊 Detail Variabel Lokal")
         
-        # Logika reverse color untuk indikator negatif (misal: Kemiskinan naik = merah/inverse)
-        is_inverse = col_key in ["kemiskinan", "tanpa_listrik", "tanpa_air_bersih", "stunting"]
+        # Dibagi lagi menjadi 2 sub-kolom agar ke-10 variabel muat ke bawah
+        sub_c1, sub_c2 = st.columns(2)
         
-        kolom_list[i].metric(
-            label=label, 
-            value=f"{val_sim:.2f}", 
-            delta=f"{delta:+.2f}" if delta != 0 else "0.00", 
-            delta_color="inverse" if is_inverse else "normal"
+        var_items = list(dict_variabel_lokal.items())
+        for i, (col_key, (label, unit)) in enumerate(var_items):
+            # Membagi penempatan kiri-kanan (ganjil-genap)
+            target_col = sub_c1 if i % 2 == 0 else sub_c2
+            
+            val_awal = float(df_base.loc[idx_kab, col_key])
+            val_sim = st.session_state[f"sim_{col_key}"]
+            delta = val_sim - val_awal
+            is_inverse = col_key in ["kemiskinan", "tanpa_listrik", "tanpa_air_bersih", "stunting"]
+            
+            formatted_val = f"{val_sim:.2f}"
+            if col_key == "anggaran_bansos":
+                delta_str = f"{abs(delta):.2f} Poin"
+            else:
+                pct_change = (delta/val_awal)*100 if val_awal != 0 else 0
+                delta_str = f"{abs(pct_change):.1f}%"
+                
+            if delta > 0.001: arrow = "↑"; delta_class = "delta-negative" if is_inverse else "delta-positive"
+            elif delta < -0.001: arrow = "↓"; delta_class = "delta-positive" if is_inverse else "delta-negative"
+            else: arrow = "→"; delta_class = "delta-neutral"; delta_str = "0.0%" if col_key != "anggaran_bansos" else "0.00 Poin"
+            
+            # HTML Metric yang dipadatkan (font-size sedikit lebih kecil agar pas)
+            html_content = f"""
+            <div class="metric-card" style="padding: 10px;">
+                <div class="metric-title" style="font-size: 0.7rem;">{label}</div>
+                <div class="metric-unit" style="font-size: 0.55rem; margin-bottom: 4px;">{unit}</div>
+                <div class="metric-value" style="font-size: 1.25rem;">{formatted_val}</div>
+                <div class="metric-delta {delta_class}">{arrow} {delta_str}</div>
+            </div>
+            """
+            target_col.markdown(html_content, unsafe_allow_html=True)
+            
+    with col_kanan:
+        st.markdown("#### 🗺️ Peta Interaktif")
+        df_map_local = df_sim_local[df_sim_local["provinsi"] == prov_terpilih]
+        
+        # AUTO ZOOM DIPANGGIL DI SINI
+        center_koor, zoom_val = get_map_view([prov_terpilih])
+        
+        fig_map_local = px.choropleth_map(
+            df_map_local, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+            color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
+            map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
+            hover_name="kab_kota", hover_data={"status_ketahanan": True}, 
+            height=580 # Tinggi disesuaikan dengan 5 baris indikator di kolom kiri
         )
-
+        fig_map_local.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_map_local, use_container_width=True)
+        
 # -----------------------------------------------------------------------------
 # 4. FUNGSI HALAMAN 2: SPATIAL AUTOCORRELATION
 # -----------------------------------------------------------------------------
