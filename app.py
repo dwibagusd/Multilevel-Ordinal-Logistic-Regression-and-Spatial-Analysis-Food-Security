@@ -220,7 +220,7 @@ def halaman_bayesian():
     # Baris 1
     col_x1, col_x2, col_x3, col_x4, col_x5 = st.columns(5)
     render_custom_metric(col_x1, "NCPR", "Rasio Pangan/Kapita", "ncpr")
-    render_custom_metric(col_x2, "Kemiskinan", "% Penduduk", "kemiskinan", is_inverse=True)
+    # render_custom_metric(col_x2, "Kemiskinan", "% Penduduk", "kemiskinan", is_inverse=True)
     render_custom_metric(col_x3, "Pengeluaran Pangan", "% Total Belanja", "pengeluaran_pangan")
     render_custom_metric(col_x4, "Tanpa Listrik", "% Rumah Tangga", "tanpa_listrik", is_inverse=True)
     render_custom_metric(col_x5, "Tanpa Air Bersih", "% Rumah Tangga", "tanpa_air_bersih", is_inverse=True)
