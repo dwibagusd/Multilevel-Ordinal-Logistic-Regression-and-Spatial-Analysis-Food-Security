@@ -60,6 +60,58 @@ URL_GEOJSON = "https://raw.githubusercontent.com/dwibagusd/Multilevel-Ordinal-Lo
 CSV_FILENAME = "data_ringan.csv"
 MATRIKS_FILENAME = "matriks_bobot_penuh.csv"
 
+KOORDINAT_PROVINSI = {
+    "aceh": {"lat": 4.6951, "lon": 96.7494, "zoom": 6},
+    "sumatera utara": {"lat": 2.1154, "lon": 99.5451, "zoom": 6},
+    "sumatera barat": {"lat": -0.7399, "lon": 100.8000, "zoom": 6.5},
+    "riau": {"lat": 0.2933, "lon": 101.7068, "zoom": 6},
+    "jambi": {"lat": -1.6116, "lon": 103.6150, "zoom": 6.5},
+    "sumatera selatan": {"lat": -3.3194, "lon": 104.1481, "zoom": 6.5},
+    "bengkulu": {"lat": -3.5778, "lon": 102.3464, "zoom": 6.5},
+    "lampung": {"lat": -4.5586, "lon": 105.4068, "zoom": 6.5},
+    "kepulauan bangka belitung": {"lat": -2.7411, "lon": 106.4406, "zoom": 6.5},
+    "kepulauan riau": {"lat": 3.9456, "lon": 108.1429, "zoom": 5.5},
+    "dki jakarta": {"lat": -6.2088, "lon": 106.8456, "zoom": 9},
+    "jawa barat": {"lat": -6.9204, "lon": 107.6046, "zoom": 7},
+    "jawa tengah": {"lat": -7.1510, "lon": 110.1403, "zoom": 7},
+    "di yogyakarta": {"lat": -7.7956, "lon": 110.3695, "zoom": 8.5},
+    "jawa timur": {"lat": -7.5361, "lon": 112.2384, "zoom": 7},
+    "banten": {"lat": -6.4058, "lon": 106.0640, "zoom": 7.5},
+    "bali": {"lat": -8.4095, "lon": 115.1889, "zoom": 8},
+    "nusa tenggara barat": {"lat": -8.6529, "lon": 117.3616, "zoom": 7},
+    "nusa tenggara timur": {"lat": -8.6574, "lon": 121.0794, "zoom": 6},
+    "kalimantan barat": {"lat": -0.2787, "lon": 111.4753, "zoom": 5.5},
+    "kalimantan tengah": {"lat": -1.6815, "lon": 113.3824, "zoom": 5.5},
+    "kalimantan selatan": {"lat": -3.0926, "lon": 115.2838, "zoom": 6},
+    "kalimantan timur": {"lat": 0.5387, "lon": 116.4194, "zoom": 5.5},
+    "kalimantan utara": {"lat": 3.0731, "lon": 116.0414, "zoom": 5.5},
+    "sulawesi utara": {"lat": 0.6247, "lon": 123.9750, "zoom": 6.5},
+    "sulawesi tengah": {"lat": -1.4300, "lon": 121.4456, "zoom": 5.5},
+    "sulawesi selatan": {"lat": -4.1449, "lon": 120.1150, "zoom": 6},
+    "sulawesi tenggara": {"lat": -4.1449, "lon": 122.1746, "zoom": 6},
+    "gorontalo": {"lat": 0.6999, "lon": 122.4467, "zoom": 7},
+    "sulawesi barat": {"lat": -2.8441, "lon": 119.2321, "zoom": 6.5},
+    "maluku": {"lat": -3.2385, "lon": 130.1453, "zoom": 5.5},
+    "maluku utara": {"lat": 1.5701, "lon": 127.8088, "zoom": 5.5},
+    "papua": {"lat": -4.2699, "lon": 138.0804, "zoom": 5},
+    "papua barat": {"lat": -1.3361, "lon": 133.1747, "zoom": 5.5},
+    "papua selatan": {"lat": -7.7126, "lon": 139.0433, "zoom": 5.5},
+    "papua tengah": {"lat": -4.1610, "lon": 135.9189, "zoom": 5.5},
+    "papua pegunungan": {"lat": -4.2541, "lon": 138.9959, "zoom": 5.5},
+    "papua barat daya": {"lat": -1.3361, "lon": 132.0, "zoom": 6}
+}
+
+# Helper fungsi untuk mengambil center dan zoom
+def get_map_view(prov_list):
+    if not prov_list or len(prov_list) != 1:
+        return {"lat": -2.5, "lon": 118}, 4.2  # Default View Indonesia
+    
+    prov_key = prov_list[0].lower().strip()
+    lat = KOORDINAT_PROVINSI.get(prov_key, {}).get("lat", -2.5)
+    lon = KOORDINAT_PROVINSI.get(prov_key, {}).get("lon", 118)
+    zoom = KOORDINAT_PROVINSI.get(prov_key, {}).get("zoom", 5.5)
+    return {"lat": lat, "lon": lon}, zoom
+
 # -----------------------------------------------------------------------------
 # 2. LOAD DATA (CACHE)
 # -----------------------------------------------------------------------------
@@ -257,15 +309,17 @@ def halaman_bayesian():
             st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
         else:
             # Peta dirender di kolom kanan
+            center_koor, zoom_val = get_map_view(provinsi_terpilih)
+            
             fig_map = px.choropleth_map(
                 df_filtered_bayes, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-                map_style="basic", zoom=4.2, center={"lat": -2.5, "lon": 118}, opacity=0.8,
+                map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name="kab_kota", hover_data=["provinsi", "kemiskinan"] if "kemiskinan" in df_filtered_bayes.columns else ["provinsi"],
-                height=520 # Tinggi disesuaikan agar seimbang dengan tumpukan metrik di kiri
+                height=520 
             )
             fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(fig_map, use_container_width=True)
+            st.plotly_chart(fig_map, use_container_width=True)     
             
         # Info Box Dampak Kebijakan diletakkan persis di bawah peta
         rentan_awal = (pred_awal == 0).sum()
@@ -390,11 +444,12 @@ def halaman_simulasi_lokal():
 
     # PETA BERADA DI PALING ATAS
     df_map_local = df_sim_local[df_sim_local["provinsi"] == prov_terpilih]
+    center_koor, zoom_val = get_map_view([prov_terpilih])
     fig_map_local = px.choropleth_map(
         df_map_local, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
         color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-        map_style="basic", zoom=5, center={"lat": -2.5, "lon": 118}, opacity=0.9, 
-        hover_name="kab_kota", hover_data={"status_ketahanan": True}, height=450
+        map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
+        hover_name="kab_kota", hover_data={"status_ketahanan": True}, height=420
     )
     fig_map_local.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig_map_local, use_container_width=True)
@@ -541,14 +596,16 @@ def halaman_spasial():
     if df_filtered_spasial.empty:
         st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
     else:
+        center_koor, zoom_val = get_map_view(provinsi_terpilih_spasial)
+            
         fig_lisa = px.choropleth_map(
             df_filtered_spasial, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
-            color="cluster_label", color_discrete_map=warna_cluster, map_style="basic", zoom=4, 
-            center={"lat": -2.5, "lon": 118}, opacity=0.9, hover_name="kab_kota", 
+            color="cluster_label", color_discrete_map=warna_cluster, map_style="basic", zoom=zoom_val, 
+            center=center_koor, opacity=0.9, hover_name="kab_kota", 
             hover_data={"ikp": True, "cluster_label": False}, height=550
         )
         fig_lisa.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(fig_lisa, width='stretch')
+        st.plotly_chart(fig_lisa, use_container_width=True)
 
     st.subheader("Raw Data")
     kolom_spasial = ["kab_kota", "provinsi", "cluster_label", "ikp"]
