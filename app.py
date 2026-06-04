@@ -532,7 +532,9 @@ def halaman_spasial():
             
         html_kesimpulan = f"""
         <div class="metric-card"><div class="metric-title">Kesimpulan Pola</div><div class="metric-unit">Distribusi Spasial</div>
-        <div class="metric-value">{kesimpulan}</div><di
+        <div class="metric-value">{kesimpulan}</div><div class="metric-delta {warna_kesimpulan}">{delta_kesimpulan}</div></div>
+        """
+        st.markdown(html_kesimpulan, unsafe_allow_html=True)
 
     with col_kanan:
         # st.markdown("#### 🗺️ Peta Local Moran's I (LISA)")
