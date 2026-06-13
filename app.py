@@ -315,6 +315,85 @@ def halaman_bayesian():
     else: pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
 
     st.info(f"💡 **Dampak Kebijakan Nasional:**\n* {pesan_rentan}\n* Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.")
+
+# -----------------------------------------------------------------------------
+# 4B. HALAMAN BARU: SIMULASI PROVINSI (LEVEL 2)
+# -----------------------------------------------------------------------------
+def halaman_simulasi_provinsi():
+    pred_awal_global = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
+    df_base = df_clean.copy()
+    df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
+
+    st.sidebar.markdown("### 🏛️ Simulasi Provinsi (Level 2)")
+    st.sidebar.info("Ubah variabel Level 2 (Bansos) pada satu provinsi untuk melihat dampak turunannya (cascade effect) ke seluruh Kabupaten/Kota di bawahnya.")
+    
+    prov_terpilih = st.sidebar.selectbox("📍 Pilih Provinsi Target:", options=sorted(df_base["provinsi"].unique()))
+    
+    # Ambil nilai awal Z-Score bansos provinsi tersebut
+    nilai_awal_bansos = float(df_base[df_base["provinsi"] == prov_terpilih]["anggaran_bansos"].iloc[0])
+    
+    with st.sidebar.form("form_provinsi"):
+        st.markdown("#### ✍️ Intervensi Level 2")
+        new_bansos = st.number_input(
+            "💰 Anggaran Bansos (Z-Score):", 
+            value=nilai_awal_bansos, 
+            step=0.1
+        )
+        submit_prov = st.form_submit_button("💾 Proses Efek Multilevel", use_container_width=True)
+
+    # Proses Simulasi
+    df_sim_prov = df_base.copy()
+    df_sim_prov.loc[df_sim_prov["provinsi"] == prov_terpilih, "anggaran_bansos"] = new_bansos
+    
+    pred_sim_prov = predict_ordinal_probs_pymc(df_sim_prov, weights, df_clean)
+    df_sim_prov["status_baru"] = pd.Series(pred_sim_prov).map(status_map)
+    
+    st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Simulasi Provinsi (Efek Multilevel)</h1>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Fokus Peta: <b>{prov_terpilih}</b>. Mengubah Level 2 akan memengaruhi probabilitas Level 1 (Kabupaten/Kota).</p>", unsafe_allow_html=True)
+
+    col_kiri, col_kanan = st.columns([3, 7])
+    
+    df_prov_only = df_sim_prov[df_sim_prov["provinsi"] == prov_terpilih].copy()
+    total_kab = len(df_prov_only)
+    
+    # Menghitung Kab/Kota yang berubah
+    kab_naik = 0
+    kab_turun = 0
+    
+    for idx, row in df_prov_only.iterrows():
+        if pred_sim_prov[idx] > pred_awal_global[idx]: kab_naik += 1
+        elif pred_sim_prov[idx] < pred_awal_global[idx]: kab_turun += 1
+            
+    with col_kiri:
+        st.markdown("#### 📊 Ringkasan Level 1")
+        st.metric("Total Kabupaten/Kota", f"{total_kab} Wilayah")
+        st.metric("Wilayah Meningkat Status", f"{kab_naik} Kab/Kota", delta="Positif", delta_color="normal" if kab_naik>0 else "off")
+        st.metric("Wilayah Menurun Status", f"{kab_turun} Kab/Kota", delta="Negatif", delta_color="inverse" if kab_turun>0 else "off")
+        
+        st.write("---")
+        st.markdown(f"**Nilai Bansos (Z-Score):**\n* Awal: `{nilai_awal_bansos:.2f}`\n* Baru: `{new_bansos:.2f}`")
+        if new_bansos != nilai_awal_bansos:
+            st.success("Tabel di bawah menampilkan data Kab/Kota yang terdampak.")
+            
+    with col_kanan:
+        st.markdown("#### 🗺️ Peta Status Terbaru")
+        center_koor, zoom_val = get_map_view([prov_terpilih])
+        
+        fig_map_prov = px.choropleth_map(
+            df_prov_only, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+            color="status_baru", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
+            map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
+            hover_name="kab_kota", hover_data={"status_baru": True}, height=450
+        )
+        fig_map_prov.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_map_prov, use_container_width=True)
+
+    st.write("---")
+    st.subheader(f"📋 Rincian Dampak Multilevel di {prov_terpilih}")
+    df_tabel = df_prov_only[["kab_kota", "status_ketahanan", "status_baru", "kemiskinan", "stunting", "pengeluaran_pangan"]].copy()
+    df_tabel.rename(columns={"status_ketahanan": "Status Awal", "status_baru": "Status Baru (Efek Bansos)"}, inplace=True)
+    st.dataframe(df_tabel, use_container_width=True, hide_index=True)
+    
 # -----------------------------------------------------------------------------
 # 4. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK (COMPACT UI)
 # -----------------------------------------------------------------------------
