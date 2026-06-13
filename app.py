@@ -416,7 +416,7 @@ def halaman_simulasi_provinsi():
             map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
             hover_name="kab_kota", hover_data={"status_baru": True}, height=450
         )
-        fig_map.update_layout(
+        fig_map_prov.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
                 margin={"r":0,"t":35,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
         )
@@ -550,7 +550,7 @@ def halaman_simulasi_lokal():
             hover_name="kab_kota", hover_data={"status_ketahanan": True}, 
             height=530 # Tinggi disesuaikan dengan 5 baris indikator di kolom kiri
         )
-        fig_map.update_layout(
+        fig_map_local.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
                 margin={"r":0,"t":35,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
         )
