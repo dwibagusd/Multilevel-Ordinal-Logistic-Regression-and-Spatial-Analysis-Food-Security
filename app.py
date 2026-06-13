@@ -419,7 +419,7 @@ def halaman_simulasi_provinsi():
         fig_map.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
                 margin={"r":0,"t":35,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
-            )
+        )
         st.plotly_chart(fig_map_prov, use_container_width=True)
 
     st.write("---")
@@ -553,7 +553,7 @@ def halaman_simulasi_lokal():
         fig_map.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
                 margin={"r":0,"t":35,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
-            )
+        )
         st.plotly_chart(fig_map_local, use_container_width=True)
 
     # ------------------ KETERANGAN DAMPAK ------------------
@@ -667,7 +667,7 @@ def halaman_spasial():
                 hover_data={"ikp": True, "cluster_label": False}, 
                 height=530 # Tinggi disesuaikan agar sejajar dengan 4 metrik di sebelah kiri
             )
-            fig_map.update_layout(
+            fig_lisa.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
                 margin={"r":0,"t":35,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
             )
