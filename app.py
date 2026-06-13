@@ -325,7 +325,7 @@ def halaman_simulasi_provinsi():
     df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
 
     # st.sidebar.markdown("### 🏛️ Simulasi Provinsi (Level 2)")
-    st.sidebar.info("Ubah variabel Level 2 (Bansos) pada satu provinsi untuk melihat dampak turunannya (cascade effect) ke seluruh Kabupaten/Kota di bawahnya.")
+    # st.sidebar.info("Ubah variabel Level 2 (Bansos) pada satu provinsi untuk melihat dampak turunannya (cascade effect) ke seluruh Kabupaten/Kota di bawahnya.")
     
     prov_terpilih = st.sidebar.selectbox("Pilih Provinsi Target:", options=sorted(df_base["provinsi"].unique()))
     
@@ -335,6 +335,7 @@ def halaman_simulasi_provinsi():
     with st.sidebar.form("form_provinsi"):
         st.markdown("#### Intervensi Anggaran Bansos Pangan")
         new_bansos = st.number_input(
+            "Anggaran Bansos"
             value=nilai_awal_bansos, 
             step=0.1
         )
