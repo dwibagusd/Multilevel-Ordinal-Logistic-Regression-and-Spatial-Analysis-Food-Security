@@ -400,7 +400,7 @@ def halaman_simulasi_provinsi():
         st.markdown(html_turun, unsafe_allow_html=True)
         
         st.write("---")
-        st.markdown(f"**Bansos (Z-Score):**\n* Awal: `{nilai_awal_bansos:.2f}`\n* Baru: `{new_bansos:.2f}`")
+        st.markdown(f"**Anggaran Bansos):**\n* Awal: `{nilai_awal_bansos:.2f}`\n* Baru: `{new_bansos:.2f}`")
         if new_bansos != nilai_awal_bansos:
             st.success("Cek tabel di bawah untuk melihat rincian Kab/Kota yang terdampak.")
     with col_kanan:
@@ -440,8 +440,7 @@ def halaman_simulasi_lokal():
         "lama_sekolah_perempuan": ("Lama Sekolah", "Rata-rata Tahun"), 
         "tenaga_kesehatan": ("Nakes", "Rasio Perkapita"),
         "harapan_hidup": ("Harapan Hidup", "Usia (Tahun)"), 
-        "stunting": ("Stunting", "% Balita"), 
-        "anggaran_bansos": ("Bansos", "Z-Score")
+        "stunting": ("Stunting", "% Balita")
     }
 
     st.sidebar.markdown("### Simulasi What-if")
@@ -510,11 +509,11 @@ def halaman_simulasi_lokal():
             is_inverse = col_key in ["kemiskinan", "tanpa_listrik", "tanpa_air_bersih", "stunting"]
             
             formatted_val = f"{val_sim:.2f}"
-            if col_key == "anggaran_bansos":
-                delta_str = f"{abs(delta):.2f} Poin"
-            else:
-                pct_change = (delta/val_awal)*100 if val_awal != 0 else 0
-                delta_str = f"{abs(pct_change):.1f}%"
+            # if col_key == "anggaran_bansos":
+            #     delta_str = f"{abs(delta):.2f} Poin"
+            # else:
+            #     pct_change = (delta/val_awal)*100 if val_awal != 0 else 0
+            #     delta_str = f"{abs(pct_change):.1f}%"
                 
             if delta > 0.001: arrow = "↑"; delta_class = "delta-negative" if is_inverse else "delta-positive"
             elif delta < -0.001: arrow = "↓"; delta_class = "delta-positive" if is_inverse else "delta-negative"
