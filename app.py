@@ -517,7 +517,7 @@ def halaman_simulasi_lokal():
                 
             if delta > 0.001: arrow = "↑"; delta_class = "delta-negative" if is_inverse else "delta-positive"
             elif delta < -0.001: arrow = "↓"; delta_class = "delta-positive" if is_inverse else "delta-negative"
-            else: arrow = "→"; delta_class = "delta-neutral"; delta_str = "0.0%" if col_key != "anggaran_bansos" else "0.00 Poin"
+            else: arrow = "→"; delta_class = "delta-neutral"; delta_str = "0.0%" 
             
             # HTML Metric yang dipadatkan (font-size sedikit lebih kecil agar pas)
             html_content = f"""
