@@ -351,7 +351,7 @@ def halaman_simulasi_provinsi():
     # st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Simulasi Provinsi (Efek Multilevel)</h1>", unsafe_allow_html=True)
     # st.markdown(f"<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Fokus Peta: <b>{prov_terpilih}</b>. Mengubah Level 2 akan memengaruhi probabilitas Level 1 (Kabupaten/Kota).</p>", unsafe_allow_html=True)
 
-    col_kiri, col_kanan = st.columns([3, 7])
+    col_kiri, col_kanan = st.columns([2, 8])
     
     df_prov_only = df_sim_prov[df_sim_prov["provinsi"] == prov_terpilih].copy()
     total_kab = len(df_prov_only)
