@@ -429,14 +429,14 @@ def halaman_simulasi_provinsi():
     st.dataframe(df_tabel, use_container_width=True, hide_index=True)
     
 # -----------------------------------------------------------------------------
-# 4. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK (COMPACT UI)
+# 4C. FUNGSI HALAMAN BARU: SIMULASI LOKAL SPESIFIK (COMPACT UI)
 # -----------------------------------------------------------------------------
 def halaman_simulasi_lokal():
     pred_awal_global = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
     df_base = df_clean.copy()
     df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
 
-    # Dictionary ini sekarang berisi (Label_Pendek, Satuan) agar muat di Sidebar & Metric Card
+    # Dictionary KINI TIDAK BERISI ANGGARAN BANSOS
     dict_variabel_lokal = {
         "ncpr": ("NCPR", "Pangan/Kapita"), 
         "kemiskinan": ("Kemiskinan", "% Penduduk"), 
@@ -492,16 +492,11 @@ def halaman_simulasi_lokal():
     status_baru_str = status_map[pred_sim_local[idx_kab]]
     df_sim_local["status_ketahanan"] = pd.Series(pred_sim_local).map(status_map)
 
-    # st.markdown("<h1 style='font-size: 2.2rem; margin-bottom: 0;'>Simulasi Kebijakan Spesifik</h1>", unsafe_allow_html=True)
-    # st.markdown(f"<p style='color: #6b7280; font-size: 0.95rem; margin-bottom: 1.5rem;'>Fokus Peta: <b>Provinsi {prov_terpilih}</b> (Daerah Target: <b>{selected_kab}</b>)</p>", unsafe_allow_html=True)
-
     # ------------------ PEMBAGIAN LAYOUT 3 : 7 ------------------
     col_kiri, col_kanan = st.columns([3, 7])
     
     with col_kiri:
-        # st.markdown("#### 📊 Detail Variabel Lokal")
-        
-        # Dibagi lagi menjadi 2 sub-kolom agar ke-10 variabel muat ke bawah
+        # Dibagi lagi menjadi 2 sub-kolom agar variabel muat ke bawah
         sub_c1, sub_c2 = st.columns(2)
         
         var_items = list(dict_variabel_lokal.items())
@@ -515,11 +510,10 @@ def halaman_simulasi_lokal():
             is_inverse = col_key in ["kemiskinan", "tanpa_listrik", "tanpa_air_bersih", "stunting"]
             
             formatted_val = f"{val_sim:.2f}"
-            # if col_key == "anggaran_bansos":
-            #     delta_str = f"{abs(delta):.2f} Poin"
-            # else:
-            #     pct_change = (delta/val_awal)*100 if val_awal != 0 else 0
-            #     delta_str = f"{abs(pct_change):.1f}%"
+            
+            # MENGHITUNG PERSENTASE SECARA LANGSUNG KARENA BANSOS SUDAH DIHAPUS
+            pct_change = (delta/val_awal)*100 if val_awal != 0 else 0
+            delta_str = f"{abs(pct_change):.1f}%"
                 
             if delta > 0.001: arrow = "↑"; delta_class = "delta-negative" if is_inverse else "delta-positive"
             elif delta < -0.001: arrow = "↓"; delta_class = "delta-positive" if is_inverse else "delta-negative"
@@ -537,7 +531,6 @@ def halaman_simulasi_lokal():
             target_col.markdown(html_content, unsafe_allow_html=True)
             
     with col_kanan:
-        # st.markdown("#### 🗺️ Peta Interaktif")
         df_map_local = df_sim_local[df_sim_local["provinsi"] == prov_terpilih]
         
         # AUTO ZOOM DIPANGGIL DI SINI
@@ -563,7 +556,7 @@ def halaman_simulasi_lokal():
     if idx_baru > idx_awal: st.success(f"🎉 **Dampak Positif!** Variabel simulasi berhasil meningkatkan status **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
     elif idx_baru < idx_awal: st.error(f"⚠️ **Waspada!** Perubahan variabel menyebabkan penurunan ketahanan pangan di **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
     else: st.info(f"💡 **Stagnan:** Nilai yang diterapkan belum merubah status ketahanan pangan **{selected_kab}** (Tetap **{status_awal_str}**).")
-
+        
 # -----------------------------------------------------------------------------
 # 4. FUNGSI HALAMAN 2: SPATIAL AUTOCORRELATION
 # -----------------------------------------------------------------------------
