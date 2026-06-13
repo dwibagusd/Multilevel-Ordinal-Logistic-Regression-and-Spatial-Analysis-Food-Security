@@ -335,7 +335,7 @@ def halaman_simulasi_provinsi():
     with st.sidebar.form("form_provinsi"):
         st.markdown("#### Intervensi Anggaran Bansos Pangan")
         new_bansos = st.number_input(
-            "Anggaran Bansos"
+            "Anggaran Bansos",
             value=nilai_awal_bansos, 
             step=0.1
         )
