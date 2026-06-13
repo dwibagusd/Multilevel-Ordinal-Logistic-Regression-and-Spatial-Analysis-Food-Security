@@ -366,15 +366,43 @@ def halaman_simulasi_provinsi():
             
     with col_kiri:
         # st.markdown("#### 📊 Ringkasan Level 1")
-        st.metric("Total Kabupaten/Kota", f"{total_kab} Wilayah")
-        st.metric("Wilayah Meningkat Status", f"{kab_naik} Kab/Kota", delta="Positif", delta_color="normal" if kab_naik>0 else "off")
-        st.metric("Wilayah Menurun Status", f"{kab_turun} Kab/Kota", delta="Negatif", delta_color="inverse" if kab_turun>0 else "off")
+        # 1. Total Kab/Kota Metric Card
+        html_tot = f"""
+        <div class="metric-card">
+            <div class="metric-title">Total Wilayah Admin</div>
+            <div class="metric-unit">Dalam Provinsi</div>
+            <div class="metric-value">{total_kab}</div>
+            <div class="metric-delta delta-neutral">Kabupaten / Kota</div>
+        </div>
+        """
+        st.markdown(html_tot, unsafe_allow_html=True)
+        
+        # 2. Meningkat Status Metric Card
+        html_naik = f"""
+        <div class="metric-card">
+            <div class="metric-title">Meningkat Status</div>
+            <div class="metric-unit">Dampak Positif Bansos</div>
+            <div class="metric-value">{kab_naik}</div>
+            <div class="metric-delta {'delta-positive' if kab_naik > 0 else 'delta-neutral'}">{'↑ Naik Status' if kab_naik > 0 else '→ Stagnan'}</div>
+        </div>
+        """
+        st.markdown(html_naik, unsafe_allow_html=True)
+        
+        # 3. Menurun Status Metric Card
+        html_turun = f"""
+        <div class="metric-card">
+            <div class="metric-title">Menurun Status</div>
+            <div class="metric-unit">Dampak Negatif Bansos</div>
+            <div class="metric-value">{kab_turun}</div>
+            <div class="metric-delta {'delta-negative' if kab_turun > 0 else 'delta-neutral'}">{'↓ Turun Status' if kab_turun > 0 else '→ Stagnan'}</div>
+        </div>
+        """
+        st.markdown(html_turun, unsafe_allow_html=True)
         
         st.write("---")
-        st.markdown(f"**Nilai Anggaran Bansos:**\n* Awal: `{nilai_awal_bansos:.2f}`\n* Baru: `{new_bansos:.2f}`")
+        st.markdown(f"**Bansos (Z-Score):**\n* Awal: `{nilai_awal_bansos:.2f}`\n* Baru: `{new_bansos:.2f}`")
         if new_bansos != nilai_awal_bansos:
-            st.success("Tabel di bawah menampilkan data Kabupaten/Kota yang terdampak.")
-            
+            st.success("Cek tabel di bawah untuk melihat rincian Kab/Kota yang terdampak.")
     with col_kanan:
         # st.markdown("#### 🗺️ Peta Status Terbaru")
         center_koor, zoom_val = get_map_view([prov_terpilih])
