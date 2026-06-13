@@ -301,7 +301,10 @@ def halaman_bayesian():
                 hover_name="kab_kota", hover_data=["provinsi", "kemiskinan"] if "kemiskinan" in df_filtered_bayes.columns else ["provinsi"],
                 height=530 
             )
-            fig_map.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+            fig_map.update_layout(
+                legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
+                margin={"r":0,"t":35,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
+            )
             st.plotly_chart(fig_map, use_container_width=True)
             
         rentan_awal = (pred_awal == 0).sum()
@@ -413,7 +416,10 @@ def halaman_simulasi_provinsi():
             map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
             hover_name="kab_kota", hover_data={"status_baru": True}, height=450
         )
-        fig_map_prov.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+        fig_map.update_layout(
+                legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
+                margin={"r":0,"t":35,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
+            )
         st.plotly_chart(fig_map_prov, use_container_width=True)
 
     st.write("---")
@@ -544,7 +550,10 @@ def halaman_simulasi_lokal():
             hover_name="kab_kota", hover_data={"status_ketahanan": True}, 
             height=530 # Tinggi disesuaikan dengan 5 baris indikator di kolom kiri
         )
-        fig_map_local.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+        fig_map.update_layout(
+                legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
+                margin={"r":0,"t":35,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
+            )
         st.plotly_chart(fig_map_local, use_container_width=True)
 
     # ------------------ KETERANGAN DAMPAK ------------------
@@ -658,7 +667,10 @@ def halaman_spasial():
                 hover_data={"ikp": True, "cluster_label": False}, 
                 height=530 # Tinggi disesuaikan agar sejajar dengan 4 metrik di sebelah kiri
             )
-            fig_lisa.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)")
+            fig_map.update_layout(
+                legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
+                margin={"r":0,"t":35,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
+            )
             st.plotly_chart(fig_lisa, use_container_width=True)
 
     st.write("---")
