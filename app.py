@@ -88,8 +88,8 @@ LEVEL2_VAR_LABEL = "Bansos"
 LEVEL2_VAR_UNIT = "Z-Score"
 
 TARGET_KAB = "IKP"          # variabel respons/komposit tingkat kab/kota untuk Moran's I
-KOL_KAB_KOTA = "kab_kota"    # id wilayah kab/kota pada data_ringan.csv (sesuaikan bila berbeda)
-KOL_PROVINSI = "provinsi"    # id provinsi pada data_ringan.csv (sesuaikan bila berbeda)
+KOL_KAB_KOTA = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv (sesuaikan bila berbeda)
+KOL_PROVINSI = "Provinsi"    # id provinsi pada data_ringan.csv (sesuaikan bila berbeda)
 
 
 def apply_clip(series, clip_type):
