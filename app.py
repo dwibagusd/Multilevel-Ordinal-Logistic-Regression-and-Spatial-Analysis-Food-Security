@@ -147,7 +147,9 @@ def predict_ordinal_probs_pymc(df_input, w, df_asli):
     gamma_z = nilai_z_bansos * w["gamma"]
     
     u_prov = df_input["provinsi"].map(w["u_provinsi"]).fillna(0.0)
-    eta = x_beta + gamma_z + u_prov
+    phi_kab = df_input["kab_kota"].map(w["phi_kabkota"]).fillna(0.0)   # BARU
+
+    eta = x_beta + gamma_z + u_prov + phi_kab   # tambahkan phi_kab
     
     cutpoints = w["cutpoints"]
     prob_cat0 = 1 / (1 + np.exp(-(cutpoints[0] - eta)))
