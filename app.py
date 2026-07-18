@@ -243,15 +243,26 @@ status_map = {0: "Rentan", 1: "Tahan", 2: "Sangat Tahan"}
 
 
 def halaman_peta_penuh():
-    st.markdown("### 🗺️ Peta Eksplorasi Visual")
-    
-    # 1. Menghitung prediksi dasar (aktual) untuk dimasukkan ke data peta
-    # Kita menggunakan df_clean langsung karena halaman ini tidak memiliki slider what-if
+    # 1. HACK CSS: Memaksa Streamlit menggunakan 100% lebar layar dan menghilangkan padding
+    st.markdown("""
+    <style>
+        /* Target khusus kontainer utama Streamlit */
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 0rem !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            max-width: 100% !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # 2. Menghitung prediksi dasar (aktual) untuk dimasukkan ke data peta
     pred_base = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
     df_map = df_clean.copy()
     df_map["status_ketahanan"] = pd.Series(pred_base).map(status_map)
     
-    # 2. Membangun Dictionary untuk Opsi Filter (Sumber Tunggal)
+    # 3. Membangun Dictionary untuk Opsi Filter
     opsi_indikator = {
         "Prediksi Model (Status Ketahanan)": "status_ketahanan",
         f"Indeks Aktual ({TARGET_KAB})": TARGET_KAB
@@ -260,20 +271,22 @@ def halaman_peta_penuh():
         opsi_indikator[f"{cfg['label']} ({cfg['unit']})"] = key
     opsi_indikator[f"{LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})"] = LEVEL2_VAR_KEY
     
-    # 3. Menempatkan Filter di Atas Peta
+    # 4. Menempatkan Filter di Atas Peta
     col_kiri, col_kanan = st.columns(2)
     with col_kiri:
         pilihan_label = st.selectbox(
-            "Pilih Indikator untuk Ditampilkan di Peta:", 
-            options=list(opsi_indikator.keys())
+            "Pilih Indikator:", 
+            options=list(opsi_indikator.keys()),
+            label_visibility="collapsed" # Menyembunyikan label agar lebih hemat ruang vertikal
         )
         kolom_target = opsi_indikator[pilihan_label]
         
     with col_kanan:
         filter_prov = st.multiselect(
-            "Filter Provinsi (Opsional - Untuk Zoom Otomatis):", 
+            "Filter Provinsi:", 
             options=sorted(df_map[KOL_PROVINSI].unique()),
-            placeholder="Tampilkan Seluruh Indonesia"
+            placeholder="Tampilkan Seluruh Indonesia",
+            label_visibility="collapsed"
         )
         
     # Terapkan filter baris data jika provinsi dipilih
@@ -281,33 +294,28 @@ def halaman_peta_penuh():
         df_map = df_map[df_map[KOL_PROVINSI].isin(filter_prov)]
         
     if df_map.empty:
-        st.warning("⚠️ Data tidak tersedia untuk wilayah yang dipilih.")
+        st.warning("Peringatan: Data tidak tersedia untuk wilayah yang dipilih.")
         return
         
     # Menyesuaikan titik tengah dan zoom kamera
-    center_koor, zoom_val = get_map_view(filter_prov) if filter_prov else ({"lat": -2.5, "lon": 118}, 4.5)
+    center_koor, zoom_val = get_map_view(filter_prov) if filter_prov else ({"lat": -2.5, "lon": 118}, 4.8)
     
-    # 4. Rendering Peta (Pemisahan Logika Diskrit vs Kontinu)
-    with st.spinner("Merender layer visual..."):
+    # 5. Rendering Peta Skala Penuh
+    with st.spinner("Memuat visualisasi layar penuh..."):
         if kolom_target == "status_ketahanan":
-            # [MODE KATEGORIKAL] - Pewarnaan label khusus
             fig = px.choropleth_map(
                 df_map, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
                 color=kolom_target, 
                 color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=750 # Memaksa Plotly merender setinggi 750 pixel (Simulasi layar penuh)
+                height=850 # Ditingkatkan dari 750px ke 850px untuk mengisi monitor standar
             )
         else:
-            # [MODE KONTINU] - Pewarnaan gradasi untuk angka (Variabel & Indeks)
-            # Logika pewarnaan otomatis: Jika indikator buruk (seperti Kemiskinan), 
-            # warna merah akan berada di angka tinggi. Jika baik (Energi), hijau di angka tinggi.
             is_inv = False
             if kolom_target in LEVEL1_VARS:
                 is_inv = LEVEL1_VARS[kolom_target].get("is_inverse", False)
                 
-            # RdYlGn = Merah ke Kuning ke Hijau. RdYlGn_r adalah kebalikannya (Reverse).
             colorscale = "RdYlGn_r" if is_inv else "RdYlGn"
             
             fig = px.choropleth_map(
@@ -316,15 +324,24 @@ def halaman_peta_penuh():
                 color_continuous_scale=colorscale,
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=750
+                height=850 # Ditingkatkan ke 850px
             )
             
         fig.update_layout(
-            margin={"r": 0, "t": 0, "l": 0, "b": 0}, # Menghapus batas putih di sekitar peta
+            margin={"r": 0, "t": 0, "l": 0, "b": 0},
             paper_bgcolor="rgba(0,0,0,0)",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, title="")
+            legend=dict(
+                orientation="h", 
+                yanchor="bottom", 
+                y=1.01, 
+                xanchor="center", 
+                x=0.5, 
+                title="",
+                bgcolor="rgba(255, 255, 255, 0.7)" # Menambahkan background tipis pada legenda agar terbaca jika overlap dengan peta
+            )
         )
         
+        # use_container_width=True memastikan grafik meregang menyamping ke batas 100% yang sudah dimodifikasi CSS
         st.plotly_chart(fig, use_container_width=True)
 
 # -----------------------------------------------------------------------------
