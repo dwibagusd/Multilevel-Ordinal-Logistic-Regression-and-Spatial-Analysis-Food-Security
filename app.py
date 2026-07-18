@@ -242,6 +242,91 @@ for key in LEVEL1_VARS:
 status_map = {0: "Rentan", 1: "Tahan", 2: "Sangat Tahan"}
 
 
+def halaman_peta_penuh():
+    st.markdown("### 🗺️ Peta Eksplorasi Visual")
+    
+    # 1. Menghitung prediksi dasar (aktual) untuk dimasukkan ke data peta
+    # Kita menggunakan df_clean langsung karena halaman ini tidak memiliki slider what-if
+    pred_base = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
+    df_map = df_clean.copy()
+    df_map["status_ketahanan"] = pd.Series(pred_base).map(status_map)
+    
+    # 2. Membangun Dictionary untuk Opsi Filter (Sumber Tunggal)
+    opsi_indikator = {
+        "Prediksi Model (Status Ketahanan)": "status_ketahanan",
+        f"Indeks Aktual ({TARGET_KAB})": TARGET_KAB
+    }
+    for key, cfg in LEVEL1_VARS.items():
+        opsi_indikator[f"{cfg['label']} ({cfg['unit']})"] = key
+    opsi_indikator[f"{LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})"] = LEVEL2_VAR_KEY
+    
+    # 3. Menempatkan Filter di Atas Peta
+    col_kiri, col_kanan = st.columns(2)
+    with col_kiri:
+        pilihan_label = st.selectbox(
+            "Pilih Indikator untuk Ditampilkan di Peta:", 
+            options=list(opsi_indikator.keys())
+        )
+        kolom_target = opsi_indikator[pilihan_label]
+        
+    with col_kanan:
+        filter_prov = st.multiselect(
+            "Filter Provinsi (Opsional - Untuk Zoom Otomatis):", 
+            options=sorted(df_map[KOL_PROVINSI].unique()),
+            placeholder="Tampilkan Seluruh Indonesia"
+        )
+        
+    # Terapkan filter baris data jika provinsi dipilih
+    if filter_prov:
+        df_map = df_map[df_map[KOL_PROVINSI].isin(filter_prov)]
+        
+    if df_map.empty:
+        st.warning("⚠️ Data tidak tersedia untuk wilayah yang dipilih.")
+        return
+        
+    # Menyesuaikan titik tengah dan zoom kamera
+    center_koor, zoom_val = get_map_view(filter_prov) if filter_prov else ({"lat": -2.5, "lon": 118}, 4.5)
+    
+    # 4. Rendering Peta (Pemisahan Logika Diskrit vs Kontinu)
+    with st.spinner("Merender layer visual..."):
+        if kolom_target == "status_ketahanan":
+            # [MODE KATEGORIKAL] - Pewarnaan label khusus
+            fig = px.choropleth_map(
+                df_map, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
+                color=kolom_target, 
+                color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
+                map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
+                hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
+                height=750 # Memaksa Plotly merender setinggi 750 pixel (Simulasi layar penuh)
+            )
+        else:
+            # [MODE KONTINU] - Pewarnaan gradasi untuk angka (Variabel & Indeks)
+            # Logika pewarnaan otomatis: Jika indikator buruk (seperti Kemiskinan), 
+            # warna merah akan berada di angka tinggi. Jika baik (Energi), hijau di angka tinggi.
+            is_inv = False
+            if kolom_target in LEVEL1_VARS:
+                is_inv = LEVEL1_VARS[kolom_target].get("is_inverse", False)
+                
+            # RdYlGn = Merah ke Kuning ke Hijau. RdYlGn_r adalah kebalikannya (Reverse).
+            colorscale = "RdYlGn_r" if is_inv else "RdYlGn"
+            
+            fig = px.choropleth_map(
+                df_map, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
+                color=kolom_target,
+                color_continuous_scale=colorscale,
+                map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
+                hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
+                height=750
+            )
+            
+        fig.update_layout(
+            margin={"r": 0, "t": 0, "l": 0, "b": 0}, # Menghapus batas putih di sekitar peta
+            paper_bgcolor="rgba(0,0,0,0)",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, title="")
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
 # -----------------------------------------------------------------------------
 # 3. FUNGSI HALAMAN 1: BAYESIAN MULTILEVEL
 # -----------------------------------------------------------------------------
@@ -704,12 +789,14 @@ def halaman_spasial():
 # -----------------------------------------------------------------------------
 # 5. SETUP NAVIGATION & EKSEKUSI
 # -----------------------------------------------------------------------------
+page_0 = st.Page(halaman_peta_penuh, title="Visualisasi Peta Utama", default=True)
 page_1 = st.Page(halaman_bayesian, title="Model Bayesian", default=True)
 page_2 = st.Page(halaman_simulasi_lokal, title="Simulasi Level 1 (Kabupaten/Kota)")
 page_3 = st.Page(halaman_simulasi_provinsi, title="Simulasi Level 2 (Provinsi)")
 page_4 = st.Page(halaman_spasial, title="Analisis Spasial")
 
 pg = st.navigation({
+    "Eksplorasi Analisis": [page_0],
     "Menu Analisis Utama": [page_1, page_2, page_3, page_4]
 })
 
