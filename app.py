@@ -240,7 +240,7 @@ def predict_ordinal_probs_pymc(df_input, w, df_asli):
     gamma_z = nilai_z_bansos * w["gamma"]
 
     u_prov = df_input[KOL_provinsi].map(w["u_provinsi"]).fillna(0.0)
-    phi_kab = df_input[KOL_kab_kota].map(w["phi_kabkota"]).fillna(0.0)
+    phi_kab = df_input[KOL_kab_kota].map(w["phi_kabupaten"]).fillna(0.0)
 
     eta = x_beta + gamma_z + u_prov + phi_kab
 
