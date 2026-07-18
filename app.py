@@ -660,16 +660,30 @@ def halaman_eksplorasi_peta():
         #     margin={"r": 0, "t": 35, "l": 0, "b": 0}, paper_bgcolor="rgba(0,0,0,0)"
         # )
         # st.plotly_chart(fig_map_local, use_container_width=True)
-
-    # Visual map layar penuh
     fig_eksplorasi = px.choropleth_map(
-        df_map_eksplorasi, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.Kabupaten/Kota", 
+        df_map_eksplorasi, 
+        geojson=URL_GEOJSON, 
+        locations=KOL_kab_kota, 
+        featureidkey="properties.kab_kota", 
         color=var_terpilih,
         color_continuous_scale="Viridis",
-        map_style="light", zoom=zoom_val, center=center_koor, opacity=0.9, 
-        hover_name=KOL_kab_kota, hover_data={var_terpilih: True, "Provinsi": True}, 
+        map_style="basic", 
+        zoom=zoom_val, 
+        center=center_koor, 
+        opacity=0.9, 
+        hover_name=KOL_kab_kota, 
+        hover_data={var_terpilih: True, "provinsi": True}, 
         height=750 
     )
+    # # Visual map layar penuh
+    # fig_eksplorasi = px.choropleth_map(
+    #     df_map_eksplorasi, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.Kabupaten/Kota", 
+    #     color=var_terpilih,
+    #     color_continuous_scale="Viridis",
+    #     map_style="light", zoom=zoom_val, center=center_koor, opacity=0.9, 
+    #     hover_name=KOL_kab_kota, hover_data={var_terpilih: True, "Provinsi": True}, 
+    #     height=750 
+    # )
     fig_eksplorasi.update_layout(
         margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
     )
