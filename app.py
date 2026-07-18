@@ -53,7 +53,7 @@ MATRIKS_FILENAME = "matriks_bobot_penuh.csv"
 # KONFIGURASI VARIABEL PREDIKTOR (SUMBER TUNGGAL / SINGLE SOURCE OF TRUTH)
 # =============================================================================
 # Sesuai KOLOM_PREDIKTOR pada model terbaru. Level 1 = kabupaten/kota,
-# Level 2 = provinsi (BANSOS).
+# Level 2 = Provinsi (BANSOS).
 #
 # PENTING - MOHON DIKONFIRMASI:
 # Label, unit, dan arah (is_inverse) untuk NCPR, MISKIN, RLSP, TNPAIR,
@@ -89,7 +89,7 @@ LEVEL2_VAR_UNIT = "Z-Score"
 
 TARGET_KAB = "IKP"          # variabel respons/komposit tingkat kab/kota untuk Moran's I
 KOL_KAB_KOTA = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv (sesuaikan bila berbeda)
-KOL_PROVINSI = "Provinsi"    # id provinsi pada data_ringan.csv (sesuaikan bila berbeda)
+KOL_Provinsi = "Provinsi"    # id Provinsi pada data_ringan.csv (sesuaikan bila berbeda)
 
 
 def apply_clip(series, clip_type):
@@ -101,7 +101,7 @@ def apply_clip(series, clip_type):
     return series.clip(lower=0)  # "min0"
 
 
-KOORDINAT_PROVINSI = {
+KOORDINAT_Provinsi = {
     "aceh": {"lat": 4.6951, "lon": 96.7494, "zoom": 6},
     "sumatera utara": {"lat": 2.1154, "lon": 99.5451, "zoom": 6},
     "sumatera barat": {"lat": -0.7399, "lon": 100.8000, "zoom": 6.5},
@@ -148,9 +148,9 @@ def get_map_view(prov_list):
         return {"lat": -2.5, "lon": 118}, 4.2  # Default View Indonesia
 
     prov_key = prov_list[0].lower().strip()
-    lat = KOORDINAT_PROVINSI.get(prov_key, {}).get("lat", -2.5)
-    lon = KOORDINAT_PROVINSI.get(prov_key, {}).get("lon", 118)
-    zoom = KOORDINAT_PROVINSI.get(prov_key, {}).get("zoom", 5.5)
+    lat = KOORDINAT_Provinsi.get(prov_key, {}).get("lat", -2.5)
+    lon = KOORDINAT_Provinsi.get(prov_key, {}).get("lon", 118)
+    zoom = KOORDINAT_Provinsi.get(prov_key, {}).get("zoom", 5.5)
     return {"lat": lat, "lon": lon}, zoom
     
 # -----------------------------------------------------------------------------
@@ -239,7 +239,7 @@ def predict_ordinal_probs_pymc(df_input, w, df_asli):
     nilai_z_bansos = (df_input[LEVEL2_VAR_KEY] - mean_z) / std_z
     gamma_z = nilai_z_bansos * w["gamma"]
 
-    u_prov = df_input[KOL_PROVINSI].map(w["u_provinsi"]).fillna(0.0)
+    u_prov = df_input[KOL_Provinsi].map(w["u_Provinsi"]).fillna(0.0)
     phi_kab = df_input[KOL_KAB_KOTA].map(w["phi_kabkota"]).fillna(0.0)
 
     eta = x_beta + gamma_z + u_prov + phi_kab
@@ -273,7 +273,7 @@ status_map = {0: "Rentan", 1: "Tahan", 2: "Sangat Tahan"}
 # -----------------------------------------------------------------------------
 def halaman_bayesian():
     st.sidebar.markdown("### Filter Eksplorasi Peta")
-    provinsi_terpilih = st.sidebar.multiselect("Filter Provinsi:", options=sorted(df_clean[KOL_PROVINSI].unique()), key="prov_bayes", placeholder="Semua Provinsi")
+    Provinsi_terpilih = st.sidebar.multiselect("Filter Provinsi:", options=sorted(df_clean[KOL_Provinsi].unique()), key="prov_bayes", placeholder="Semua Provinsi")
     label_terpilih = st.sidebar.multiselect("Filter Status:", options=["Rentan", "Tahan", "Sangat Tahan"], key="label_bayes", placeholder="Semua Status")
     st.sidebar.subheader("Simulasi What-If")
 
@@ -350,20 +350,20 @@ def halaman_bayesian():
 
     with col_kanan:
         df_filtered_bayes = df_sim.copy()
-        if provinsi_terpilih:
-            df_filtered_bayes = df_filtered_bayes[df_filtered_bayes[KOL_PROVINSI].isin(provinsi_terpilih)]
+        if Provinsi_terpilih:
+            df_filtered_bayes = df_filtered_bayes[df_filtered_bayes[KOL_Provinsi].isin(Provinsi_terpilih)]
         if label_terpilih:
             df_filtered_bayes = df_filtered_bayes[df_filtered_bayes["status_ketahanan"].isin(label_terpilih)]
 
         if df_filtered_bayes.empty:
             st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
         else:
-            center_koor, zoom_val = get_map_view(provinsi_terpilih)
+            center_koor, zoom_val = get_map_view(Provinsi_terpilih)
             fig_map = px.choropleth_map(
                 df_filtered_bayes, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.8,
-                hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI, "MISKIN"] if "MISKIN" in df_filtered_bayes.columns else [KOL_PROVINSI],
+                hover_name=KOL_KAB_KOTA, hover_data=[KOL_Provinsi, "MISKIN"] if "MISKIN" in df_filtered_bayes.columns else [KOL_Provinsi],
                 height=530
             )
             fig_map.update_layout(
@@ -389,18 +389,18 @@ def halaman_bayesian():
 
 
 # -----------------------------------------------------------------------------
-# 4B. HALAMAN: SIMULASI PROVINSI (LEVEL 2)
+# 4B. HALAMAN: SIMULASI Provinsi (LEVEL 2)
 # -----------------------------------------------------------------------------
-def halaman_simulasi_provinsi():
+def halaman_simulasi_Provinsi():
     pred_awal_global = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
     df_base = df_clean.copy()
     df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
 
-    prov_terpilih = st.sidebar.selectbox("Pilih Provinsi Target:", options=sorted(df_base[KOL_PROVINSI].unique()))
+    prov_terpilih = st.sidebar.selectbox("Pilih Provinsi Target:", options=sorted(df_base[KOL_Provinsi].unique()))
 
-    nilai_awal_bansos = float(df_base[df_base[KOL_PROVINSI] == prov_terpilih][LEVEL2_VAR_KEY].iloc[0])
+    nilai_awal_bansos = float(df_base[df_base[KOL_Provinsi] == prov_terpilih][LEVEL2_VAR_KEY].iloc[0])
 
-    with st.sidebar.form("form_provinsi"):
+    with st.sidebar.form("form_Provinsi"):
         st.markdown("#### Intervensi Anggaran Bansos Pangan")
         new_bansos = st.number_input(
             "Anggaran Bansos",
@@ -410,14 +410,14 @@ def halaman_simulasi_provinsi():
         submit_prov = st.form_submit_button("Enter", use_container_width=True)
 
     df_sim_prov = df_base.copy()
-    df_sim_prov.loc[df_sim_prov[KOL_PROVINSI] == prov_terpilih, LEVEL2_VAR_KEY] = new_bansos
+    df_sim_prov.loc[df_sim_prov[KOL_Provinsi] == prov_terpilih, LEVEL2_VAR_KEY] = new_bansos
 
     pred_sim_prov = predict_ordinal_probs_pymc(df_sim_prov, weights, df_clean)
     df_sim_prov["status_baru"] = pd.Series(pred_sim_prov).map(status_map)
 
     col_kiri, col_kanan = st.columns([2, 8])
 
-    df_prov_only = df_sim_prov[df_sim_prov[KOL_PROVINSI] == prov_terpilih].copy()
+    df_prov_only = df_sim_prov[df_sim_prov[KOL_Provinsi] == prov_terpilih].copy()
     total_kab = len(df_prov_only)
 
     kab_naik = 0
@@ -496,7 +496,7 @@ def halaman_simulasi_lokal():
     df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
 
     # Dictionary variabel lokal dibangun otomatis dari LEVEL1_VARS (BANSOS tidak
-    # termasuk karena itu variabel Level 2 / provinsi)
+    # termasuk karena itu variabel Level 2 / Provinsi)
     dict_variabel_lokal = {key: (cfg["label"], cfg["unit"]) for key, cfg in LEVEL1_VARS.items()}
 
     st.sidebar.markdown("### Simulasi What-if")
@@ -512,7 +512,7 @@ def halaman_simulasi_lokal():
         st.stop()
 
     selected_kab = st.sidebar.selectbox("Pilih Kabupaten/Kota:", options=pilihan_kab)
-    prov_terpilih = df_base[df_base[KOL_KAB_KOTA] == selected_kab][KOL_PROVINSI].values[0]
+    prov_terpilih = df_base[df_base[KOL_KAB_KOTA] == selected_kab][KOL_Provinsi].values[0]
     idx_kab = df_base[df_base[KOL_KAB_KOTA] == selected_kab].index[0]
 
     if 'kab_aktif' not in st.session_state:
@@ -589,7 +589,7 @@ def halaman_simulasi_lokal():
             target_col.markdown(html_content, unsafe_allow_html=True)
 
     with col_kanan:
-        df_map_local = df_sim_local[df_sim_local[KOL_PROVINSI] == prov_terpilih]
+        df_map_local = df_sim_local[df_sim_local[KOL_Provinsi] == prov_terpilih]
 
         center_koor, zoom_val = get_map_view([prov_terpilih])
 
@@ -639,12 +639,12 @@ def halaman_eksplorasi_peta():
     with col_filter_1:
         var_terpilih = st.selectbox("Pilih Variabel:", options=list(dict_var_eksplorasi.keys()), format_func=lambda x: dict_var_eksplorasi[x])
     with col_filter_2:
-        prov_terpilih = st.multiselect("Filter Provinsi (Opsional):", options=sorted(df_clean["provinsi"].unique()), placeholder="Tampilkan Semua Provinsi")
+        prov_terpilih = st.multiselect("Filter Provinsi (Opsional):", options=sorted(df_clean["Provinsi"].unique()), placeholder="Tampilkan Semua Provinsi")
         
     df_map_eksplorasi = df_clean.copy()
     
     if prov_terpilih:
-        df_map_eksplorasi = df_map_eksplorasi[df_map_eksplorasi["provinsi"].isin(prov_terpilih)]
+        df_map_eksplorasi = df_map_eksplorasi[df_map_eksplorasi["Provinsi"].isin(prov_terpilih)]
         center_koor, zoom_val = get_map_view(prov_terpilih)
     else:
         center_koor, zoom_val = {"lat": -2.5, "lon": 118}, 4.5
@@ -655,7 +655,7 @@ def halaman_eksplorasi_peta():
         color=var_terpilih,
         color_continuous_scale="Viridis",
         map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
-        hover_name="kab_kota", hover_data={var_terpilih: True, "provinsi": True}, 
+        hover_name="kab_kota", hover_data={var_terpilih: True, "Provinsi": True}, 
         height=750 
     )
     fig_eksplorasi.update_layout(
@@ -685,14 +685,14 @@ def halaman_spasial():
     df_spasial.loc[signifikan & (kuadran == 2), 'cluster_label'] = 'LH (Outlier)'
 
     st.sidebar.markdown("### 🔍 Filter Area Spasial")
-    provinsi_terpilih_spasial = st.sidebar.multiselect("Pilih Provinsi:", options=sorted(df_spasial[KOL_PROVINSI].unique()), key="prov_spasial", placeholder="Semua Provinsi")
+    Provinsi_terpilih_spasial = st.sidebar.multiselect("Pilih Provinsi:", options=sorted(df_spasial[KOL_Provinsi].unique()), key="prov_spasial", placeholder="Semua Provinsi")
     kluster_terpilih = st.sidebar.multiselect("Pilih Kluster LISA:", options=sorted(df_spasial["cluster_label"].unique()), key="kluster_spasial", placeholder="Semua Kluster")
     st.sidebar.write("---")
-    st.sidebar.info("Gunakan filter di atas untuk mengisolasi titik Hotspot/Coldspot pada provinsi tertentu di peta utama.")
+    st.sidebar.info("Gunakan filter di atas untuk mengisolasi titik Hotspot/Coldspot pada Provinsi tertentu di peta utama.")
 
     df_filtered_spasial = df_spasial.copy()
-    if provinsi_terpilih_spasial:
-        df_filtered_spasial = df_filtered_spasial[df_filtered_spasial[KOL_PROVINSI].isin(provinsi_terpilih_spasial)]
+    if Provinsi_terpilih_spasial:
+        df_filtered_spasial = df_filtered_spasial[df_filtered_spasial[KOL_Provinsi].isin(Provinsi_terpilih_spasial)]
     if kluster_terpilih:
         df_filtered_spasial = df_filtered_spasial[df_filtered_spasial["cluster_label"].isin(kluster_terpilih)]
 
@@ -749,7 +749,7 @@ def halaman_spasial():
         if df_filtered_spasial.empty:
             st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
         else:
-            center_koor, zoom_val = get_map_view(provinsi_terpilih_spasial)
+            center_koor, zoom_val = get_map_view(Provinsi_terpilih_spasial)
 
             fig_lisa = px.choropleth_map(
                 df_filtered_spasial, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
@@ -766,7 +766,7 @@ def halaman_spasial():
 
     st.write("---")
     st.subheader("📋 Raw Data Kluster Spasial")
-    kolom_spasial = [KOL_KAB_KOTA, KOL_PROVINSI, "cluster_label", TARGET_KAB]
+    kolom_spasial = [KOL_KAB_KOTA, KOL_Provinsi, "cluster_label", TARGET_KAB]
     st.dataframe(df_filtered_spasial[kolom_spasial], use_container_width=True, hide_index=True)
 
 
@@ -775,7 +775,7 @@ def halaman_spasial():
 # -----------------------------------------------------------------------------
 page_1 = st.Page(halaman_bayesian, title="Model Bayesian", default=True)
 page_3 = st.Page(halaman_simulasi_lokal, title="Simulasi Level 1 (Kabupaten/Kota)")
-page_4 = st.Page(halaman_simulasi_provinsi, title="Simulasi Level 2 (Provinsi)")
+page_4 = st.Page(halaman_simulasi_Provinsi, title="Simulasi Level 2 (Provinsi)")
 page_2 = st.Page(halaman_spasial, title="Analisis Spasial")
 page_5 = st.Page(halaman_eksplorasi_peta, title="Eksplorasi Peta Penuh")
 
