@@ -6,6 +6,7 @@ import plotly.express as px
 import libpysal as lps
 from esda.moran import Moran, Moran_Local
 import warnings
+import time
 
 # Mengabaikan warning dari pysal
 warnings.filterwarnings("ignore", category=UserWarning, message="The weights matrix is not fully connected")
@@ -13,33 +14,29 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 # -----------------------------------------------------------------------------
 # 1. KONFIGURASI HALAMAN & STYLE (CSS INJECTION)
 # -----------------------------------------------------------------------------
-st.set_page_config(
-    page_title="Dashboard Ketahanan Pangan",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
 st.markdown("""
 <style>
-    /* Mengoptimalkan Font agar muat di 3 Kolom */
     html, body, p, li, label, .streamlit-expanderHeader, .stMarkdown { font-size: 0.9rem !important; }
 
     .metric-card {
-        background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px;
-        padding: 10px 12px; /* Padding sedikit dirapatkan agar muat 3 kolom */
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; font-family: 'Inter', sans-serif;
+        background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px;
+        padding: 12px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 12px; font-family: 'Inter', sans-serif;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
-    .metric-title { color: #4b5563; font-size: 0.75rem; font-weight: 600; margin-bottom: 2px; line-height: 1.2; }
-    .metric-unit { color: #9ca3af; font-size: 0.65rem; margin-bottom: 6px; line-height: 1; }
-    .metric-value { font-size: 1.35rem; font-weight: 700; color: #111827; margin-bottom: 6px; line-height: 1; }
-    .metric-delta { font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .metric-title { color: #4b5563; font-size: 0.75rem; font-weight: 600; margin-bottom: 2px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.05em;}
+    .metric-unit { color: #9ca3af; font-size: 0.65rem; margin-bottom: 8px; line-height: 1; }
+    .metric-value { font-size: 1.45rem; font-weight: 700; color: #111827; margin-bottom: 6px; line-height: 1; }
+    .metric-delta { font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 12px; display: inline-block; }
 
     .delta-positive { background-color: #dcfce7; color: #166534; }
     .delta-negative { background-color: #fee2e2; color: #991b1b; }
     .delta-neutral { background-color: #f3f4f6; color: #374151; }
 
-    [data-testid="stMetricValue"] div { font-size: 1.4rem !important; }
-    [data-testid="stMetricLabel"] p { font-size: 0.8rem !important; }
     [data-testid="stSidebar"] { color: #f8fafc; }
 </style>
 """, unsafe_allow_html=True)
@@ -192,33 +189,39 @@ except FileNotFoundError as e:
 
 # Menyiapkan fungsi prediksi PyMC yang akan dipakai di seluruh halaman
 def predict_ordinal_probs_pymc(df_input, w, df_asli):
-    x_beta = 0
+    eta = np.zeros(len(df_input))
+    # 1. Menghitung X * Beta
     for col, coef in w["beta"].items():
         if col in df_input.columns:
             mean_val = df_asli[col].mean()
             std_val = df_asli[col].std()
-            if std_val == 0:
-                std_val = 1e-9
+            if std_val == 0: std_val = 1e-9
             nilai_z = (df_input[col] - mean_val) / std_val
-            x_beta += nilai_z * coef
-
+            eta += (nilai_z * coef).values # Kalkulasi langsung ke seluruh baris
+            
+    # 2. Menghitung Z * Gamma (Bansos)
     mean_z = df_asli[LEVEL2_VAR_KEY].mean()
     std_z = df_asli[LEVEL2_VAR_KEY].std()
-    if std_z == 0:
-        std_z = 1e-9
-
+    if std_z == 0: std_z = 1e-9
+    
     nilai_z_bansos = (df_input[LEVEL2_VAR_KEY] - mean_z) / std_z
-    gamma_z = nilai_z_bansos * w["gamma"]
-
-    u_prov = df_input[KOL_PROVINSI].map(w["u_provinsi"]).fillna(0.0)
-    phi_kab = df_input[KOL_KAB_KOTA].map(w["phi_kabkota"]).fillna(0.0)
-
-    eta = x_beta + gamma_z + u_prov + phi_kab
-
+    gamma_z = (nilai_z_bansos * w["gamma"]).values
+    
+    # 3. Menghitung Random Effects 
+    u_prov = df_input[KOL_PROVINSI].map(w["u_provinsi"]).fillna(0.0).values
+    
+    # [BUG FIX]: Menggunakan "phi_kabupaten" sesuai isi file JSON asli
+    kunci_phi = "phi_kabupaten" if "phi_kabupaten" in w else "phi_kabkota"
+    phi_kab = df_input[KOL_KAB_KOTA].map(w[kunci_phi]).fillna(0.0).values
+    
+    # Total Linear Predictor
+    eta = eta + gamma_z + u_prov + phi_kab
+    
+    # 4. Kalkulasi Probabilitas Ordinal
     cutpoints = w["cutpoints"]
     prob_cat0 = 1 / (1 + np.exp(-(cutpoints[0] - eta)))
     prob_cat_0_1 = 1 / (1 + np.exp(-(cutpoints[1] - eta)))
-
+    
     probs = np.column_stack([prob_cat0, prob_cat_0_1 - prob_cat0, 1.0 - prob_cat_0_1])
     return np.argmax(probs, axis=1)
 
@@ -228,7 +231,7 @@ def reset_simulasi():
     for key in LEVEL1_VARS:
         st.session_state[f"sim_{key}"] = 0
     st.session_state[f"sim_{LEVEL2_VAR_KEY}"] = 0.0
-
+    st.toast("Simulasi berhasil direset ke nilai awal!") # Feedback UI
 
 if f"sim_{LEVEL2_VAR_KEY}" not in st.session_state:
     st.session_state[f"sim_{LEVEL2_VAR_KEY}"] = 0.0
@@ -330,6 +333,7 @@ def halaman_bayesian():
             st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
         else:
             center_koor, zoom_val = get_map_view(provinsi_terpilih)
+            with st.spinner("Merender Peta Bayesian..."):
             fig_map = px.choropleth_map(
                 df_filtered_bayes, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
@@ -351,11 +355,13 @@ def halaman_bayesian():
 
     if rentan_sim < rentan_awal:
         pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
+        st.success(pesan_rentan)
     elif rentan_sim > rentan_awal:
         pesan_rentan = f"⚠️ Waspada! Terdapat **{rentan_sim - rentan_awal} daerah baru** jatuh ke zona Rentan."
+        st.error(pesan_rentan)
     else:
         pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
-
+        st.info(pesan_rentan)
     st.info(f"💡 **Dampak Kebijakan Nasional:**\n* {pesan_rentan}\n* Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.")
 
 
@@ -700,12 +706,12 @@ def halaman_spasial():
 # 5. SETUP NAVIGATION & EKSEKUSI
 # -----------------------------------------------------------------------------
 page_1 = st.Page(halaman_bayesian, title="Model Bayesian", default=True)
-page_3 = st.Page(halaman_simulasi_lokal, title="Simulasi Level 1 (Kabupaten/Kota)")
-page_4 = st.Page(halaman_simulasi_provinsi, title="Simulasi Level 2 (Provinsi)")
-page_2 = st.Page(halaman_spasial, title="Analisis Spasial")
+page_2 = st.Page(halaman_simulasi_lokal, title="Simulasi Level 1 (Kabupaten/Kota)")
+page_3 = st.Page(halaman_simulasi_provinsi, title="Simulasi Level 2 (Provinsi)")
+page_4 = st.Page(halaman_spasial, title="Analisis Spasial")
 
 pg = st.navigation({
-    "Menu Analisis Utama": [page_1, page_4, page_3, page_2]
+    "Menu Analisis Utama": [page_1, page_2, page_3, page_4]
 })
 
 pg.run()
