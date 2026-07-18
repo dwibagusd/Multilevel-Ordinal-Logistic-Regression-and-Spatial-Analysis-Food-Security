@@ -16,8 +16,19 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
+    /* 1. Mengatur Kontainer Utama agar Lebar Penuh di SEMUA halaman */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        max-width: 100% !important;
+    }
+
+    /* 2. Menyesuaikan Font dan Elemen */
     html, body, p, li, label, .streamlit-expanderHeader, .stMarkdown { font-size: 0.9rem !important; }
 
+    /* 3. Efek dan Styling Metric Card */
     .metric-card {
         background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px;
         padding: 12px; 
@@ -37,6 +48,7 @@ st.markdown("""
     .delta-negative { background-color: #fee2e2; color: #991b1b; }
     .delta-neutral { background-color: #f3f4f6; color: #374151; }
 
+    /* Menyesuaikan teks Sidebar */
     [data-testid="stSidebar"] { color: #f8fafc; }
 </style>
 """, unsafe_allow_html=True)
@@ -244,19 +256,6 @@ status_map = {0: "Rentan", 1: "Tahan", 2: "Sangat Tahan"}
 
 def halaman_peta_penuh():
     # 1. HACK CSS: Memaksa Streamlit menggunakan 100% lebar layar dan menghilangkan padding
-    st.markdown("""
-    <style>
-        /* Target khusus kontainer utama Streamlit */
-        .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 0rem !important;
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            max-width: 100% !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
     # 2. Menghitung prediksi dasar (aktual) untuk dimasukkan ke data peta
     pred_base = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
     df_map = df_clean.copy()
