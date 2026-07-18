@@ -51,34 +51,32 @@ MATRIKS_FILENAME = "matriks_bobot_penuh.csv"
 # =============================================================================
 # KONFIGURASI VARIABEL PREDIKTOR (SINGLE SOURCE OF TRUTH)
 # =============================================================================
-# 'Keys' merepresentasikan nama variabel dalam JSON model PyMC Anda.
-# 'csv_col' merepresentasikan nama header kolom riil di data_ringan.csv Anda.
 LEVEL1_VARS = {
-    "NCPR":       {"csv_col": "ncpr", "label": "NCPR", "unit": "Pangan/Kapita", "is_inverse": False, "clip": "min0"},
-    "ENERGI":     {"csv_col": "energi", "label": "Ketersediaan Energi", "unit": "Kkal/Kapita/Hari", "is_inverse": False, "clip": "min0"},
-    "PROHE":      {"csv_col": "prohe", "label": "PROHE", "unit": "Nilai", "is_inverse": False, "clip": "min0"},
-    "CBPK":       {"csv_col": "cbpk", "label": "CBPK", "unit": "Nilai", "is_inverse": False, "clip": "min0"},
-    "MISKIN":     {"csv_col": "kemiskinan", "label": "Kemiskinan", "unit": "% Penduduk", "is_inverse": True,  "clip": "pct"},
-    "CVHARGA":    {"csv_col": "cvharga", "label": "Volatilitas Harga (CV)", "unit": "% Koef. Variasi", "is_inverse": True,  "clip": "min0"},
-    "POU":        {"csv_col": "pou", "label": "Prevalence of Undernourishment", "unit": "% Penduduk", "is_inverse": True,  "clip": "pct"},
-    "RLSP":       {"csv_col": "lama_sekolah_perempuan", "label": "Lama Sekolah Perempuan", "unit": "Rata-rata Tahun", "is_inverse": False, "clip": "years"},
-    "TNPAIR":     {"csv_col": "tanpa_air_bersih", "label": "Tanpa Air Bersih", "unit": "% Rumah Tangga", "is_inverse": True,  "clip": "pct"},
-    "TNPLISTRIK": {"csv_col": "tanpa_listrik", "label": "Tanpa Listrik", "unit": "% Rumah Tangga", "is_inverse": True,  "clip": "pct"},
-    "NAKES":      {"csv_col": "tenaga_kesehatan", "label": "Tenaga Kesehatan", "unit": "Rasio Perkapita", "is_inverse": False, "clip": "min0"},
-    "AHH":        {"csv_col": "harapan_hidup", "label": "Harapan Hidup", "unit": "Usia (Tahun)", "is_inverse": False, "clip": "pct", "slider_range": (-10, 10)},
-    "AMANPANGN":  {"csv_col": "amanpangn", "label": "Keamanan Pangan", "unit": "% Wilayah/RT", "is_inverse": False, "clip": "pct"},
-    "PPH":        {"csv_col": "pph", "label": "Pola Pangan Harapan (PPH)", "unit": "Skor (0-100)", "is_inverse": False, "clip": "pct"},
-    "STUNTING":   {"csv_col": "stunting", "label": "Stunting", "unit": "% Balita", "is_inverse": True,  "clip": "pct"},
+    "NCPR":       {"csv_col": "NCPR",       "label": "NCPR", "unit": "Pangan/Kapita", "is_inverse": False, "clip": "min0"},
+    "ENERGI":     {"csv_col": "ENERGI",     "label": "Ketersediaan Energi", "unit": "Kkal/Kapita/Hari", "is_inverse": False, "clip": "min0"},
+    "PROHE":      {"csv_col": "PROHE",      "label": "PROHE", "unit": "Nilai", "is_inverse": False, "clip": "min0"},
+    "CBPK":       {"csv_col": "CBPK",       "label": "CBPK", "unit": "Nilai", "is_inverse": False, "clip": "min0"},
+    "MISKIN":     {"csv_col": "MISKIN",     "label": "Kemiskinan", "unit": "% Penduduk", "is_inverse": True,  "clip": "pct"},
+    "CVHARGA":    {"csv_col": "CVHARGA",    "label": "Volatilitas Harga (CV)", "unit": "% Koef. Variasi", "is_inverse": True,  "clip": "min0"},
+    "POU":        {"csv_col": "POU",        "label": "Prevalence of Undernourishment", "unit": "% Penduduk", "is_inverse": True,  "clip": "pct"},
+    "RLSP":       {"csv_col": "RLSP",       "label": "Lama Sekolah Perempuan", "unit": "Rata-rata Tahun", "is_inverse": False, "clip": "years"},
+    "TNPAIR":     {"csv_col": "TNPAIR",     "label": "Tanpa Air Bersih", "unit": "% Rumah Tangga", "is_inverse": True,  "clip": "pct"},
+    "TNPLISTRIK": {"csv_col": "TNPLISTRIK", "label": "Tanpa Listrik", "unit": "% Rumah Tangga", "is_inverse": True,  "clip": "pct"},
+    "NAKES":      {"csv_col": "NAKES",      "label": "Tenaga Kesehatan", "unit": "Rasio Perkapita", "is_inverse": False, "clip": "min0"},
+    "AHH":        {"csv_col": "AHH",        "label": "Harapan Hidup", "unit": "Usia (Tahun)", "is_inverse": False, "clip": "pct", "slider_range": (-10, 10)},
+    "AMANPANGN":  {"csv_col": "AMANPANGN",  "label": "Keamanan Pangan", "unit": "% Wilayah/RT", "is_inverse": False, "clip": "pct"},
+    "PPH":        {"csv_col": "PPH",        "label": "Pola Pangan Harapan (PPH)", "unit": "Skor (0-100)", "is_inverse": False, "clip": "pct"},
+    "STUNTING":   {"csv_col": "STUNTING",   "label": "Stunting", "unit": "% Balita", "is_inverse": True,  "clip": "pct"},
 }
 
 # Parameter Level 2 (Provinsi)
-LEVEL2_VAR_KEY = "BANSOS"  # Kolom riil di data_ringan.csv
+LEVEL2_VAR_KEY = "BANSOS"  
 LEVEL2_VAR_LABEL = "Bansos"
 LEVEL2_VAR_UNIT = "Z-Score"
 
 TARGET_KAB = "IKP"                 # variabel respons/komposit
 KOL_kab_kota = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv 
-KOL_provinsi = "Provinsi"          # id Provinsi pada data_ringan.csv 
+KOL_provinsi = "Provinsi"          # id Provinsi pada data_ringan.csv
 
 
 def apply_clip(series, clip_type):
