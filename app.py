@@ -71,14 +71,17 @@ LEVEL1_VARS = {
     "STUNTING":   {"csv_col": "stunting", "label": "Stunting", "unit": "% Balita", "is_inverse": True,  "clip": "pct"},
 }
 
-# Parameter Level 2 (Provinsi)
-LEVEL2_VAR_KEY = "anggaran_bansos"  # Kolom riil di data_ringan.csv
+# =============================================================================
+# KONFIGURASI VARIABEL UTAMA
+# =============================================================================
+LEVEL2_VAR_KEY = "anggaran_bansos" # Sudah benar
 LEVEL2_VAR_LABEL = "Bansos"
 LEVEL2_VAR_UNIT = "Z-Score"
 
-TARGET_KAB = "IKP"                 # variabel respons/komposit
-KOL_kab_kota = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv 
-KOL_provinsi = "Provinsi"          # id Provinsi pada data_ringan.csv 
+# UBAH 3 BARIS INI: Gunakan huruf kecil sesuai nama kolom di data_ringan.csv
+TARGET_KAB = "ikp"                 
+KOL_kab_kota = "kab_kota"    
+KOL_provinsi = "provinsi"
 
 
 def apply_clip(series, clip_type):
