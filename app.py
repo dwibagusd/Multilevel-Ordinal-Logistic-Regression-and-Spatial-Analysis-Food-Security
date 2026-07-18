@@ -71,17 +71,14 @@ LEVEL1_VARS = {
     "STUNTING":   {"csv_col": "stunting", "label": "Stunting", "unit": "% Balita", "is_inverse": True,  "clip": "pct"},
 }
 
-# =============================================================================
-# KONFIGURASI VARIABEL UTAMA
-# =============================================================================
-LEVEL2_VAR_KEY = "anggaran_bansos" # Sudah benar
+# Parameter Level 2 (Provinsi)
+LEVEL2_VAR_KEY = "BANSOS"  # Kolom riil di data_ringan.csv
 LEVEL2_VAR_LABEL = "Bansos"
 LEVEL2_VAR_UNIT = "Z-Score"
 
-# UBAH 3 BARIS INI: Gunakan huruf kecil sesuai nama kolom di data_ringan.csv
-TARGET_KAB = "ikp"                 
-KOL_kab_kota = "kab_kota"    
-KOL_provinsi = "provinsi"
+TARGET_KAB = "IKP"                 # variabel respons/komposit
+KOL_kab_kota = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv 
+KOL_provinsi = "Provinsi"          # id Provinsi pada data_ringan.csv 
 
 
 def apply_clip(series, clip_type):
@@ -349,7 +346,7 @@ def halaman_bayesian():
         else:
             center_koor, zoom_val = get_map_view(Provinsi_terpilih)
             fig_map = px.choropleth_map(
-                df_filtered_bayes, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.kab_kota",
+                df_filtered_bayes, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.Kabupaten/Kota",
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_kab_kota, 
@@ -462,7 +459,7 @@ def halaman_simulasi_Provinsi():
         center_koor, zoom_val = get_map_view([prov_terpilih])
 
         fig_map_prov = px.choropleth_map(
-            df_prov_only, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.kab_kota",
+            df_prov_only, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.Kabupaten/Kota",
             color="status_baru", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
             map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9,
             hover_name=KOL_kab_kota, hover_data={"status_baru": True}, height=450
@@ -589,7 +586,7 @@ def halaman_simulasi_lokal():
         center_koor, zoom_val = get_map_view([prov_terpilih])
 
         fig_map_local = px.choropleth_map(
-            df_map_local, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.kab_kota",
+            df_map_local, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.Kabupaten/Kota",
             color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
             map_style="light", zoom=zoom_val, center=center_koor, opacity=0.9,
             hover_name=KOL_kab_kota, hover_data={"status_ketahanan": True},
@@ -640,7 +637,7 @@ def halaman_eksplorasi_peta():
         df_map_eksplorasi, 
         geojson=URL_GEOJSON, 
         locations=KOL_kab_kota, 
-        featureidkey="properties.kab_kota", 
+        featureidkey="properties.Kabupaten/Kota", 
         color=var_terpilih,
         color_continuous_scale="Viridis",
         map_style="basic", 
@@ -746,7 +743,7 @@ def halaman_spasial():
             center_koor, zoom_val = get_map_view(Provinsi_terpilih_spasial)
 
             fig_lisa = px.choropleth_map(
-                df_filtered_spasial, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.kab_kota",
+                df_filtered_spasial, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.Kabupaten/Kota",
                 color="cluster_label", color_discrete_map=warna_cluster, map_style="basic", zoom=zoom_val,
                 center=center_koor, opacity=0.9, hover_name=KOL_kab_kota,
                 hover_data={TARGET_KAB: True, "cluster_label": False},
