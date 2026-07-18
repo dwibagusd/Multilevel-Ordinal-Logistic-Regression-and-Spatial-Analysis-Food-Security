@@ -175,7 +175,10 @@ def plot_prob_stacked_bar(p_awal, p_sim):
 # -----------------------------------------------------------------------------
 @st.cache_data
 def load_tabular_data(file_path):
-    return pd.read_csv(file_path)
+    df = pd.read_csv(file_path)
+    # Membersihkan spasi tersembunyi di awal/akhir nama kolom
+    df.columns = df.columns.str.strip()
+    return df
 
 @st.cache_data
 def load_spatial_weights(file_path):
