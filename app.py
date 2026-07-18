@@ -152,7 +152,36 @@ def get_map_view(prov_list):
     lon = KOORDINAT_PROVINSI.get(prov_key, {}).get("lon", 118)
     zoom = KOORDINAT_PROVINSI.get(prov_key, {}).get("zoom", 5.5)
     return {"lat": lat, "lon": lon}, zoom
-
+    
+# -----------------------------------------------------------------------------
+# 2. FUNGSI VISUALISASI BAYESIAN UNCERTAINTY (ERROR BARS)
+# -----------------------------------------------------------------------------
+def plot_prob_stacked_bar(p_awal, p_sim):
+    fig = go.Figure()
+    y_labels = ['Awal', 'Simulasi']
+    
+    fig.add_trace(go.Bar(
+        y=y_labels, x=[p_awal[0]*100, p_sim[0]*100], name='Rentan', orientation='h',
+        marker=dict(color='#ef4444'), text=[f"{p_awal[0]*100:.1f}%", f"{p_sim[0]*100:.1f}%"], textposition='auto'
+    ))
+    fig.add_trace(go.Bar(
+        y=y_labels, x=[p_awal[1]*100, p_sim[1]*100], name='Tahan', orientation='h',
+        marker=dict(color='#eab308'), text=[f"{p_awal[1]*100:.1f}%", f"{p_sim[1]*100:.1f}%"], textposition='auto'
+    ))
+    fig.add_trace(go.Bar(
+        y=y_labels, x=[p_awal[2]*100, p_sim[2]*100], name='Sangat Tahan', orientation='h',
+        marker=dict(color='#22c55e'), text=[f"{p_awal[2]*100:.1f}%", f"{p_sim[2]*100:.1f}%"], textposition='auto'
+    ))
+    
+    fig.update_layout(
+        barmode='stack', height=160, margin=dict(l=0, r=0, t=30, b=0),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font={'family': "Inter, sans-serif", 'size': 12},
+        xaxis=dict(showgrid=False, zeroline=False, visible=False, range=[0, 100]),
+        yaxis=dict(showgrid=False, zeroline=False, title_standoff=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5, title="")
+    )
+    return fig
 # -----------------------------------------------------------------------------
 # 2. LOAD DATA (CACHE)
 # -----------------------------------------------------------------------------
@@ -587,7 +616,52 @@ def halaman_simulasi_lokal():
     else:
         st.info(f"💡 **Stagnan:** Nilai yang diterapkan belum merubah status ketahanan pangan **{selected_kab}** (Tetap **{status_awal_str}**).")
 
+# -----------------------------------------------------------------------------
+# HALAMAN 4: EKSPLORASI PETA PENUH (FITUR BARU)
+# -----------------------------------------------------------------------------
+def halaman_eksplorasi_peta():
+    dict_var_eksplorasi = {
+        "ikp": "Indeks Ketahanan Pangan (IKP)",
+        "ncpr": "NCPR",
+        "kemiskinan": "Kemiskinan (%)",
+        "pengeluaran_pangan": "Pengeluaran Pangan (%)",
+        "tanpa_listrik": "Tanpa Listrik (%)",
+        "tanpa_air_bersih": "Tanpa Air Bersih (%)",
+        "lama_sekolah_perempuan": "Lama Sekolah Perempuan",
+        "tenaga_kesehatan": "Tenaga Kesehatan",
+        "harapan_hidup": "Harapan Hidup",
+        "stunting": "Stunting (%)",
+        "anggaran_bansos": "Anggaran Bansos (Z-Score)"
+    }
+    
+    # Filter ditempatkan di atas visual map
+    col_filter_1, col_filter_2 = st.columns([1, 1])
+    with col_filter_1:
+        var_terpilih = st.selectbox("Pilih Variabel:", options=list(dict_var_eksplorasi.keys()), format_func=lambda x: dict_var_eksplorasi[x])
+    with col_filter_2:
+        prov_terpilih = st.multiselect("Filter Provinsi (Opsional):", options=sorted(df_clean["provinsi"].unique()), placeholder="Tampilkan Semua Provinsi")
+        
+    df_map_eksplorasi = df_clean.copy()
+    
+    if prov_terpilih:
+        df_map_eksplorasi = df_map_eksplorasi[df_map_eksplorasi["provinsi"].isin(prov_terpilih)]
+        center_koor, zoom_val = get_map_view(prov_terpilih)
+    else:
+        center_koor, zoom_val = {"lat": -2.5, "lon": 118}, 4.5
 
+    # Visual map layar penuh
+    fig_eksplorasi = px.choropleth_map(
+        df_map_eksplorasi, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+        color=var_terpilih,
+        color_continuous_scale="Viridis",
+        map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
+        hover_name="kab_kota", hover_data={var_terpilih: True, "provinsi": True}, 
+        height=750 
+    )
+    fig_eksplorasi.update_layout(
+        margin={"r":0,"t":0,"l":0,"b":0}, paper_bgcolor="rgba(0,0,0,0)"
+    )
+    st.plotly_chart(fig_eksplorasi, use_container_width=True)
 # -----------------------------------------------------------------------------
 # 4. FUNGSI HALAMAN 2: SPATIAL AUTOCORRELATION
 # -----------------------------------------------------------------------------
@@ -703,9 +777,10 @@ page_1 = st.Page(halaman_bayesian, title="Model Bayesian", default=True)
 page_3 = st.Page(halaman_simulasi_lokal, title="Simulasi Level 1 (Kabupaten/Kota)")
 page_4 = st.Page(halaman_simulasi_provinsi, title="Simulasi Level 2 (Provinsi)")
 page_2 = st.Page(halaman_spasial, title="Analisis Spasial")
+page_5 = st.Page(halaman_eksplorasi_peta, title="Eksplorasi Peta Penuh")
 
 pg = st.navigation({
-    "Menu Analisis Utama": [page_1, page_4, page_3, page_2]
+    "Menu Analisis Utama": [page_1, page_4, page_3, page_5, page_2]
 })
 
 pg.run()
