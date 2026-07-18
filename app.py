@@ -221,35 +221,64 @@ except FileNotFoundError as e:
 
 # Menyiapkan fungsi prediksi PyMC yang akan dipakai di seluruh halaman
 def predict_ordinal_probs_pymc(df_input, w, df_asli):
+    # Kamus translasi dari key JSON (model) ke nama kolom di file CSV
+    # Sesuaikan 'value' di sisi kanan dengan nama kolom riil di data_ringan.csv Anda
+    map_var = {
+        "NCPR": "ncpr",
+        "ENERGI": "energi",
+        "PROHE": "prohe",
+        "CBPK": "cbpk",
+        "MISKIN": "kemiskinan", 
+        "CVHARGA": "cvharga",
+        "POU": "pou",
+        "RLSP": "lama_sekolah_perempuan",
+        "TNPAIR": "tanpa_air_bersih",
+        "TNPLISTRIK": "tanpa_listrik",
+        "NAKES": "tenaga_kesehatan",
+        "AHH": "harapan_hidup",
+        "AMANPANGN": "amanpangn",
+        "PPH": "pph",
+        "STUNTING": "stunting"
+    }
+
     x_beta = 0
-    for col, coef in w["beta"].items():
-        if col in df_input.columns:
-            mean_val = df_asli[col].mean()
-            std_val = df_asli[col].std()
-            if std_val == 0:
-                std_val = 1e-9
-            nilai_z = (df_input[col] - mean_val) / std_val
+    # Loop menggunakan kunci dari kamus 'beta' JSON
+    for json_key, coef in w["beta"].items():
+        # Dapatkan nama kolom CSV yang bersesuaian
+        csv_col = map_var.get(json_key) 
+        
+        if csv_col and csv_col in df_input.columns:
+            mean_val = df_asli[csv_col].mean()
+            std_val = df_asli[csv_col].std()
+            if std_val == 0: std_val = 1e-9 
+            
+            # Hitung Z-Score untuk fitur tersebut
+            nilai_z = (df_input[csv_col] - mean_val) / std_val
             x_beta += nilai_z * coef
-
-    mean_z = df_asli[LEVEL2_VAR_KEY].mean()
-    std_z = df_asli[LEVEL2_VAR_KEY].std()
-    if std_z == 0:
-        std_z = 1e-9
-
-    nilai_z_bansos = (df_input[LEVEL2_VAR_KEY] - mean_z) / std_z
+            
+    # Ekstraksi efek Bansos (Gamma)
+    mean_z = df_asli["anggaran_bansos"].mean()
+    std_z = df_asli["anggaran_bansos"].std()
+    if std_z == 0: std_z = 1e-9
+    
+    nilai_z_bansos = (df_input["anggaran_bansos"] - mean_z) / std_z
     gamma_z = nilai_z_bansos * w["gamma"]
-
+    
+    # Ekstraksi Efek Acak Level 2 (Provinsi)
     u_prov = df_input[KOL_provinsi].map(w["u_provinsi"]).fillna(0.0)
-    phi_kab = df_input[KOL_kab_kota].map(w["phi_kabupaten"]).fillna(0.0)
-
-    eta = x_beta + gamma_z + u_prov + phi_kab
-
+    
+    # Ekstraksi Efek Acak Spasial CAR Level 1 (Kabupaten/Kota)
+    phi_spasial = df_input[KOL_kab_kota].map(w.get("phi_kabupaten", {})).fillna(0.0)
+    
+    # Prediktor Linear Gabungan
+    eta = x_beta + gamma_z + u_prov + phi_spasial
+    
     cutpoints = w["cutpoints"]
     prob_cat0 = 1 / (1 + np.exp(-(cutpoints[0] - eta)))
     prob_cat_0_1 = 1 / (1 + np.exp(-(cutpoints[1] - eta)))
-
+    
     probs = np.column_stack([prob_cat0, prob_cat_0_1 - prob_cat0, 1.0 - prob_cat_0_1])
-    return np.argmax(probs, axis=1)
+    return probs
 
 
 # Inisialisasi Session State (dibangun otomatis dari LEVEL1_VARS)
