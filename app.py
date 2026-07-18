@@ -612,32 +612,59 @@ def halaman_simulasi_lokal():
 # HALAMAN 4: EKSPLORASI PETA PENUH (FITUR BARU)
 # -----------------------------------------------------------------------------
 def halaman_eksplorasi_peta():
-    dict_var_eksplorasi = {TARGET_KAB: "Indeks Ketahanan Pangan (IKP)"}
+    st.markdown("### 🗺️ Eksplorasi Peta Penuh")
     
-    # Membangun dictionary opsi eksplorasi secara dinamis
+    # 1. Bangun kamus variabel secara dinamis dan AMAN
+    # Hanya tambahkan variabel yang benar-benar ada di dalam kolom DataFrame
+    dict_var_eksplorasi = {}
+    
+    if TARGET_KAB in df_clean.columns:
+        dict_var_eksplorasi[TARGET_KAB] = "Indeks Ketahanan Pangan (IKP)"
+        
     for key, cfg in LEVEL1_VARS.items():
-        dict_var_eksplorasi[cfg["csv_col"]] = cfg["label"]
-    dict_var_eksplorasi[LEVEL2_VAR_KEY] = f"{LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})"
-    
+        col_name = cfg["csv_col"]
+        if col_name in df_clean.columns:
+            dict_var_eksplorasi[col_name] = cfg["label"]
+            
+    if LEVEL2_VAR_KEY in df_clean.columns:
+        dict_var_eksplorasi[LEVEL2_VAR_KEY] = f"{LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})"
+
+    # Berikan peringatan di dashboard jika kamus kosong (indikasi salah penamaan seluruh kolom)
+    if not dict_var_eksplorasi:
+        st.error("⚠️ Tidak ada satupun variabel yang cocok dengan data CSV Anda. Periksa penamaan kolom!")
+        return
+
     col_filter_1, col_filter_2 = st.columns([1, 1])
     with col_filter_1:
-        var_terpilih = st.selectbox("Pilih Variabel:", options=list(dict_var_eksplorasi.keys()), format_func=lambda x: dict_var_eksplorasi[x])
+        var_terpilih = st.selectbox(
+            "Pilih Variabel:", 
+            options=list(dict_var_eksplorasi.keys()), 
+            format_func=lambda x: dict_var_eksplorasi[x]
+        )
     with col_filter_2:
-        prov_terpilih = st.multiselect("Filter Provinsi (Opsional):", options=sorted(df_clean[KOL_provinsi].unique()), placeholder="Tampilkan Semua Provinsi")
+        # Aman memanggil KOL_provinsi jika ada
+        opsi_provinsi = sorted(df_clean[KOL_provinsi].unique()) if KOL_provinsi in df_clean.columns else []
+        prov_terpilih = st.multiselect("Filter Provinsi (Opsional):", options=opsi_provinsi, placeholder="Tampilkan Semua Provinsi")
         
     df_map_eksplorasi = df_clean.copy()
     
-    if prov_terpilih:
+    if prov_terpilih and KOL_provinsi in df_map_eksplorasi.columns:
         df_map_eksplorasi = df_map_eksplorasi[df_map_eksplorasi[KOL_provinsi].isin(prov_terpilih)]
         center_koor, zoom_val = get_map_view(prov_terpilih)
     else:
         center_koor, zoom_val = {"lat": -2.5, "lon": 118}, 4.5
-        
+    
+    # 2. Susun array untuk hover_data secara kondisional
+    hover_cols = [var_terpilih]
+    if KOL_provinsi in df_map_eksplorasi.columns:
+        hover_cols.append(KOL_provinsi)
+
+    # 3. Render Peta Plotly
     fig_eksplorasi = px.choropleth_map(
         df_map_eksplorasi, 
         geojson=URL_GEOJSON, 
         locations=KOL_kab_kota, 
-        featureidkey="properties.Kabupaten/Kota", 
+        featureidkey="properties.Kabupaten/Kota",  # Pastikan ini sudah sesuai dengan properti JSON Anda
         color=var_terpilih,
         color_continuous_scale="Viridis",
         map_style="basic", 
@@ -645,7 +672,7 @@ def halaman_eksplorasi_peta():
         center=center_koor, 
         opacity=0.9, 
         hover_name=KOL_kab_kota, 
-        hover_data={var_terpilih: True, KOL_provinsi: True}, 
+        hover_data=hover_cols, 
         height=750 
     )
     fig_eksplorasi.update_layout(
