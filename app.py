@@ -648,14 +648,26 @@ def halaman_eksplorasi_peta():
         center_koor, zoom_val = get_map_view(prov_terpilih)
     else:
         center_koor, zoom_val = {"lat": -2.5, "lon": 118}, 4.5
+        # fig_map_local = px.choropleth_map(
+        #     df_map_local, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.Kabupaten/Kota",
+        #     color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
+        #     map_style="light", zoom=zoom_val, center=center_koor, opacity=0.9,
+        #     hover_name=KOL_kab_kota, hover_data={"status_ketahanan": True},
+        #     height=530
+        # )
+        #     fig_map_local.update_layout(
+        #     legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
+        #     margin={"r": 0, "t": 35, "l": 0, "b": 0}, paper_bgcolor="rgba(0,0,0,0)"
+        # )
+        # st.plotly_chart(fig_map_local, use_container_width=True)
 
     # Visual map layar penuh
     fig_eksplorasi = px.choropleth_map(
-        df_map_eksplorasi, geojson=URL_GEOJSON, locations="Kabupaten/Kota", featureidkey="properties.Kabupaten/Kota", 
+        df_map_eksplorasi, geojson=URL_GEOJSON, locations=KOL_kab_kota, featureidkey="properties.Kabupaten/Kota", 
         color=var_terpilih,
         color_continuous_scale="Viridis",
-        map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
-        hover_name="Kabupaten/Kota", hover_data={var_terpilih: True, "Provinsi": True}, 
+        map_style="light", zoom=zoom_val, center=center_koor, opacity=0.9, 
+        hover_name=KOL_kab_kota, hover_data={var_terpilih: True, "Provinsi": True}, 
         height=750 
     )
     fig_eksplorasi.update_layout(
