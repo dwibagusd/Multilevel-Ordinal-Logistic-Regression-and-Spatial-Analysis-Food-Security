@@ -210,7 +210,8 @@ def predict_ordinal_probs_pymc(df_input, w, df_asli):
         if json_key in LEVEL1_VARS:
             csv_col = LEVEL1_VARS[json_key]["csv_col"]
             
-            if csv_col in df_input.columns:
+            # Cek keamanan ganda: pastikan kolom ada di df_input DAN df_asli
+            if csv_col in df_input.columns and csv_col in df_asli.columns:
                 mean_val = df_asli[csv_col].mean()
                 std_val = df_asli[csv_col].std()
                 if std_val == 0: std_val = 1e-9 
@@ -278,10 +279,14 @@ def halaman_bayesian():
 
     df_sim = df_clean.copy()
     for key, cfg in LEVEL1_VARS.items():
-        pct = st.session_state[f"sim_{key}"]
-        df_sim[cfg["csv_col"]] = apply_clip(df_clean[cfg["csv_col"]] * (1 + pct / 100), cfg["clip"])
+        col_name = cfg["csv_col"]
+        # Hanya kalikan jika kolom diverifikasi ada di dataframe
+        if col_name in df_clean.columns:
+            pct = st.session_state.get(f"sim_{key}", 0)
+            df_sim[col_name] = apply_clip(df_clean[col_name] * (1 + pct / 100), cfg["clip"])
         
-    df_sim[LEVEL2_VAR_KEY] = df_clean[LEVEL2_VAR_KEY] + sim_bansos
+    if LEVEL2_VAR_KEY in df_clean.columns:
+        df_sim[LEVEL2_VAR_KEY] = df_clean[LEVEL2_VAR_KEY] + sim_bansos
 
     st.sidebar.button("Reset", on_click=reset_simulasi, width='stretch')
 
@@ -491,9 +496,14 @@ def halaman_simulasi_lokal():
     df_base = df_clean.copy()
     df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
 
-    dict_variabel_lokal = {key: (cfg["label"], cfg["unit"], cfg["csv_col"]) for key, cfg in LEVEL1_VARS.items()}
+    # Hanya daftarkan variabel yang benar-benar ada di df_base
+    dict_variabel_lokal = {}
+    for key, cfg in LEVEL1_VARS.items():
+        if cfg["csv_col"] in df_base.columns:
+            dict_variabel_lokal[key] = (cfg["label"], cfg["unit"], cfg["csv_col"])
 
     st.sidebar.markdown("### Simulasi What-if")
+    # ... (lanjutkan kode seperti sebelumnya)
     filter_status = st.sidebar.selectbox("Filter Status Awal:", options=["Semua Status", "Rentan", "Tahan", "Sangat Tahan"])
 
     if filter_status != "Semua Status":
