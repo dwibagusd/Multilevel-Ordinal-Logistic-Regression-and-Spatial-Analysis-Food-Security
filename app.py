@@ -333,7 +333,6 @@ def halaman_bayesian():
             st.warning("⚠️ Tidak ada data yang sesuai dengan filter yang Anda pilih.")
         else:
             center_koor, zoom_val = get_map_view(provinsi_terpilih)
-            with st.spinner("Merender Peta Bayesian..."):
             fig_map = px.choropleth_map(
                 df_filtered_bayes, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
