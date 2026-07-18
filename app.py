@@ -72,11 +72,11 @@ LEVEL1_VARS = {
 # Parameter Level 2 (Provinsi)
 LEVEL2_VAR_KEY = "BANSOS"  
 LEVEL2_VAR_LABEL = "Bansos"
-LEVEL2_VAR_UNIT = "Z-Score"
+LEVEL2_VAR_UNIT = "Nilai Riil" # Label disesuaikan karena data berupa nominal besar
 
-TARGET_KAB = "IKP"                 # variabel respons/komposit
-KOL_kab_kota = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv 
-KOL_provinsi = "Provinsi"          # id Provinsi pada data_ringan.csv
+TARGET_KAB = "IKP"                 
+KOL_kab_kota = "KABUPATEN/KOTA"    # Wajib kapital karena df sudah di-upper()
+KOL_provinsi = "PROVINSI"          # Wajib kapital karena df sudah di-upper()
 
 
 def apply_clip(series, clip_type):
@@ -174,8 +174,9 @@ def plot_prob_stacked_bar(p_awal, p_sim):
 @st.cache_data
 def load_tabular_data(file_path):
     df = pd.read_csv(file_path)
-    # Membersihkan spasi tersembunyi di awal/akhir nama kolom
-    df.columns = df.columns.str.strip()
+    # Membersihkan spasi dan memaksa semua header menjadi HURUF KAPITAL
+    # Ini akan mengatasi semua masalah case-sensitive (huruf besar/kecil)
+    df.columns = df.columns.str.strip().str.upper()
     return df
 
 @st.cache_data
@@ -278,13 +279,15 @@ def halaman_bayesian():
     df_sim = df_clean.copy()
     for key, cfg in LEVEL1_VARS.items():
         col_name = cfg["csv_col"]
-        # Hanya kalikan jika kolom diverifikasi ada di dataframe
         if col_name in df_clean.columns:
             pct = st.session_state.get(f"sim_{key}", 0)
             df_sim[col_name] = apply_clip(df_clean[col_name] * (1 + pct / 100), cfg["clip"])
         
     if LEVEL2_VAR_KEY in df_clean.columns:
-        df_sim[LEVEL2_VAR_KEY] = df_clean[LEVEL2_VAR_KEY] + sim_bansos
+        # Konversi Z-Score dari slider kembali ke nominal nilai riil
+        std_bansos = df_clean[LEVEL2_VAR_KEY].std()
+        if std_bansos == 0: std_bansos = 1e-9
+        df_sim[LEVEL2_VAR_KEY] = df_clean[LEVEL2_VAR_KEY] + (sim_bansos * std_bansos)
 
     st.sidebar.button("Reset", on_click=reset_simulasi, width='stretch')
 
