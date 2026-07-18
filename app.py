@@ -88,7 +88,7 @@ LEVEL2_VAR_LABEL = "Bansos"
 LEVEL2_VAR_UNIT = "Z-Score"
 
 TARGET_KAB = "IKP"          # variabel respons/komposit tingkat kab/kota untuk Moran's I
-KOL_KAB_KOTA = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv (sesuaikan bila berbeda)
+KOL_Kabupaten/Kota = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv (sesuaikan bila berbeda)
 KOL_Provinsi = "Provinsi"    # id Provinsi pada data_ringan.csv (sesuaikan bila berbeda)
 
 
@@ -240,7 +240,7 @@ def predict_ordinal_probs_pymc(df_input, w, df_asli):
     gamma_z = nilai_z_bansos * w["gamma"]
 
     u_prov = df_input[KOL_Provinsi].map(w["u_Provinsi"]).fillna(0.0)
-    phi_kab = df_input[KOL_KAB_KOTA].map(w["phi_kabkota"]).fillna(0.0)
+    phi_kab = df_input[KOL_Kabupaten/Kota].map(w["phi_kabkota"]).fillna(0.0)
 
     eta = x_beta + gamma_z + u_prov + phi_kab
 
@@ -360,10 +360,10 @@ def halaman_bayesian():
         else:
             center_koor, zoom_val = get_map_view(Provinsi_terpilih)
             fig_map = px.choropleth_map(
-                df_filtered_bayes, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
+                df_filtered_bayes, geojson=URL_GEOJSON, locations=KOL_Kabupaten/Kota, featureidkey="properties.Kabupaten/Kota",
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.8,
-                hover_name=KOL_KAB_KOTA, hover_data=[KOL_Provinsi, "MISKIN"] if "MISKIN" in df_filtered_bayes.columns else [KOL_Provinsi],
+                hover_name=KOL_Kabupaten/Kota, hover_data=[KOL_Provinsi, "MISKIN"] if "MISKIN" in df_filtered_bayes.columns else [KOL_Provinsi],
                 height=530
             )
             fig_map.update_layout(
@@ -468,10 +468,10 @@ def halaman_simulasi_Provinsi():
         center_koor, zoom_val = get_map_view([prov_terpilih])
 
         fig_map_prov = px.choropleth_map(
-            df_prov_only, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
+            df_prov_only, geojson=URL_GEOJSON, locations=KOL_Kabupaten/Kota, featureidkey="properties.Kabupaten/Kota",
             color="status_baru", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
             map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9,
-            hover_name=KOL_KAB_KOTA, hover_data={"status_baru": True}, height=450
+            hover_name=KOL_Kabupaten/Kota, hover_data={"status_baru": True}, height=450
         )
         fig_map_prov.update_layout(
             legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
@@ -480,7 +480,7 @@ def halaman_simulasi_Provinsi():
         st.plotly_chart(fig_map_prov, use_container_width=True)
 
     st.write("---")
-    kolom_tabel = [KOL_KAB_KOTA, "status_ketahanan", "status_baru", "MISKIN", "STUNTING", "PPH"]
+    kolom_tabel = [KOL_Kabupaten/Kota, "status_ketahanan", "status_baru", "MISKIN", "STUNTING", "PPH"]
     kolom_tabel = [c for c in kolom_tabel if c in df_prov_only.columns]
     df_tabel = df_prov_only[kolom_tabel].copy()
     df_tabel.rename(columns={"status_ketahanan": "Status Awal", "status_baru": "Status Baru (Efek Bansos)"}, inplace=True)
@@ -503,17 +503,17 @@ def halaman_simulasi_lokal():
     filter_status = st.sidebar.selectbox("Filter Status Awal:", options=["Semua Status", "Rentan", "Tahan", "Sangat Tahan"])
 
     if filter_status != "Semua Status":
-        pilihan_kab = sorted(df_base[df_base["status_ketahanan"] == filter_status][KOL_KAB_KOTA].unique())
+        pilihan_kab = sorted(df_base[df_base["status_ketahanan"] == filter_status][KOL_Kabupaten/Kota].unique())
     else:
-        pilihan_kab = sorted(df_base[KOL_KAB_KOTA].unique())
+        pilihan_kab = sorted(df_base[KOL_Kabupaten/Kota].unique())
 
     if not pilihan_kab:
         st.sidebar.warning(f"Tidak ada wilayah dengan status {filter_status}.")
         st.stop()
 
     selected_kab = st.sidebar.selectbox("Pilih Kabupaten/Kota:", options=pilihan_kab)
-    prov_terpilih = df_base[df_base[KOL_KAB_KOTA] == selected_kab][KOL_Provinsi].values[0]
-    idx_kab = df_base[df_base[KOL_KAB_KOTA] == selected_kab].index[0]
+    prov_terpilih = df_base[df_base[KOL_Kabupaten/Kota] == selected_kab][KOL_Provinsi].values[0]
+    idx_kab = df_base[df_base[KOL_Kabupaten/Kota] == selected_kab].index[0]
 
     if 'kab_aktif' not in st.session_state:
         st.session_state.kab_aktif = None
@@ -594,10 +594,10 @@ def halaman_simulasi_lokal():
         center_koor, zoom_val = get_map_view([prov_terpilih])
 
         fig_map_local = px.choropleth_map(
-            df_map_local, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
+            df_map_local, geojson=URL_GEOJSON, locations=KOL_Kabupaten/Kota, featureidkey="properties.Kabupaten/Kota",
             color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
             map_style="light", zoom=zoom_val, center=center_koor, opacity=0.9,
-            hover_name=KOL_KAB_KOTA, hover_data={"status_ketahanan": True},
+            hover_name=KOL_Kabupaten/Kota, hover_data={"status_ketahanan": True},
             height=530
         )
         fig_map_local.update_layout(
@@ -651,11 +651,11 @@ def halaman_eksplorasi_peta():
 
     # Visual map layar penuh
     fig_eksplorasi = px.choropleth_map(
-        df_map_eksplorasi, geojson=URL_GEOJSON, locations="kab_kota", featureidkey="properties.kab_kota", 
+        df_map_eksplorasi, geojson=URL_GEOJSON, locations="Kabupaten/Kota", featureidkey="properties.Kabupaten/Kota", 
         color=var_terpilih,
         color_continuous_scale="Viridis",
         map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9, 
-        hover_name="kab_kota", hover_data={var_terpilih: True, "Provinsi": True}, 
+        hover_name="Kabupaten/Kota", hover_data={var_terpilih: True, "Provinsi": True}, 
         height=750 
     )
     fig_eksplorasi.update_layout(
@@ -752,9 +752,9 @@ def halaman_spasial():
             center_koor, zoom_val = get_map_view(Provinsi_terpilih_spasial)
 
             fig_lisa = px.choropleth_map(
-                df_filtered_spasial, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
+                df_filtered_spasial, geojson=URL_GEOJSON, locations=KOL_Kabupaten/Kota, featureidkey="properties.Kabupaten/Kota",
                 color="cluster_label", color_discrete_map=warna_cluster, map_style="basic", zoom=zoom_val,
-                center=center_koor, opacity=0.9, hover_name=KOL_KAB_KOTA,
+                center=center_koor, opacity=0.9, hover_name=KOL_Kabupaten/Kota,
                 hover_data={TARGET_KAB: True, "cluster_label": False},
                 height=530
             )
@@ -766,7 +766,7 @@ def halaman_spasial():
 
     st.write("---")
     st.subheader("📋 Raw Data Kluster Spasial")
-    kolom_spasial = [KOL_KAB_KOTA, KOL_Provinsi, "cluster_label", TARGET_KAB]
+    kolom_spasial = [KOL_Kabupaten/Kota, KOL_Provinsi, "cluster_label", TARGET_KAB]
     st.dataframe(df_filtered_spasial[kolom_spasial], use_container_width=True, hide_index=True)
 
 
