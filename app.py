@@ -790,7 +790,7 @@ def halaman_spasial():
 # 5. SETUP NAVIGATION & EKSEKUSI
 # -----------------------------------------------------------------------------
 page_0 = st.Page(halaman_peta_penuh, title="Visualisasi Peta Utama", default=True)
-page_1 = st.Page(halaman_bayesian, title="Model Bayesian", default=True)
+page_1 = st.Page(halaman_bayesian, title="Model Bayesian")
 page_2 = st.Page(halaman_simulasi_lokal, title="Simulasi Level 1 (Kabupaten/Kota)")
 page_3 = st.Page(halaman_simulasi_provinsi, title="Simulasi Level 2 (Provinsi)")
 page_4 = st.Page(halaman_spasial, title="Analisis Spasial")
