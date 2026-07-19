@@ -28,21 +28,35 @@ st.markdown("""
     /* 2. Menyesuaikan Font dan Elemen */
     html, body, p, li, label, .streamlit-expanderHeader, .stMarkdown { font-size: 0.9rem !important; }
 
-    /* 3. Efek dan Styling Metric Card */
+    /* 3. Efek dan Styling Metric Card - UKURAN DIPERKECIL UNTUK ALIGNMENT */
     .metric-card {
         background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px;
-        padding: 12px; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 12px; font-family: 'Inter', sans-serif;
+        padding: 8px; /* Jarak dalam diperkecil dari 12px */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 8px; /* Jarak antar kartu diperkecil dari 12px */
+        font-family: 'Inter', sans-serif;
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
     .metric-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .metric-title { color: #4b5563; font-size: 0.75rem; font-weight: 600; margin-bottom: 2px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.05em;}
-    .metric-unit { color: #9ca3af; font-size: 0.65rem; margin-bottom: 8px; line-height: 1; }
-    .metric-value { font-size: 1.45rem; font-weight: 700; color: #111827; margin-bottom: 6px; line-height: 1; }
-    .metric-delta { font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 12px; display: inline-block; }
+    .metric-title { 
+        color: #4b5563; 
+        font-size: 0.65rem; /* Diperkecil dari 0.75rem */
+        font-weight: 600; 
+        margin-bottom: 2px; 
+        line-height: 1.1; 
+        text-transform: uppercase; 
+        letter-spacing: 0.02em;
+        /* Membatasi judul maksimal 2 baris agar tinggi seragam */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .metric-unit { color: #9ca3af; font-size: 0.55rem; margin-bottom: 4px; line-height: 1; } /* Font dan jarak bawah diperkecil */
+    .metric-value { font-size: 1.1rem; font-weight: 700; color: #111827; margin-bottom: 4px; line-height: 1; } /* Diperkecil dari 1.45rem */
+    .metric-delta { font-size: 0.65rem; font-weight: 600; padding: 2px 6px; border-radius: 12px; display: inline-block; }
 
     .delta-positive { background-color: #dcfce7; color: #166534; }
     .delta-negative { background-color: #fee2e2; color: #991b1b; }
