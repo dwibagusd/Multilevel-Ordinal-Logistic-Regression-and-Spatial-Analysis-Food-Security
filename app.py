@@ -491,7 +491,7 @@ def halaman_bayesian():
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI, "MISKIN"] if "MISKIN" in df_filtered_bayes.columns else [KOL_PROVINSI],
-                height=400
+                height=500
             )
             fig_map.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
@@ -748,7 +748,7 @@ def halaman_simulasi_lokal():
             color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
             map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.9,
             hover_name=KOL_KAB_KOTA, hover_data={"status_ketahanan": True},
-            height=400
+            height=600
         )
         fig_map_local.update_layout(
             legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
@@ -874,7 +874,7 @@ def halaman_spasial():
                 color="cluster_label", color_discrete_map=warna_cluster, map_style="carto-positron", zoom=zoom_val,
                 center=center_koor, opacity=0.9, hover_name=KOL_KAB_KOTA,
                 hover_data={TARGET_KAB: True, "cluster_label": False},
-                height=650
+                height=400
             )
             fig_lisa.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
@@ -883,7 +883,7 @@ def halaman_spasial():
             st.plotly_chart(fig_lisa, use_container_width=True)
 
     st.write("---")
-    st.subheader("📋 Raw Data Kluster Spasial")
+    st.subheader("Data Klaster Spasial")
     kolom_spasial = [KOL_KAB_KOTA, KOL_PROVINSI, "cluster_label", TARGET_KAB]
     st.dataframe(df_filtered_spasial[kolom_spasial], use_container_width=True, hide_index=True)
 
