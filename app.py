@@ -76,7 +76,7 @@ MATRIKS_FILENAME = "matriks_bobot_penuh.csv"
 # KONFIGURASI VARIABEL PREDIKTOR
 # =============================================================================
 LEVEL1_VARS = {
-    "NCPR":       {"label": "NCPR",                          "unit": "Pangan/Kapita",       "is_inverse": False, "clip": "min0"},
+    "NCPR":       {"label": "NCPR",                          "unit": "Pangan/Kapita",       "is_inverse": True, "clip": "min0"},
     "ENERGI":     {"label": "Ketersediaan Energi",            "unit": "Kkal/Kapita/Hari",    "is_inverse": False, "clip": "min0"},  
     "PROHE":      {"label": "PROHE",                          "unit": "Nilai",               "is_inverse": False, "clip": "min0"},  
     "CBPK":       {"label": "CBPK",                           "unit": "Nilai",               "is_inverse": False, "clip": "min0"},  
