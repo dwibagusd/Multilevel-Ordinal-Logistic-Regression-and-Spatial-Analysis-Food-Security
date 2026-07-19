@@ -198,9 +198,9 @@ def load_tabular_data(file_path):
             # Petakan kembali ke dataset utama dengan nama kolom baru khusus untuk Model
             df_clean[f"{LEVEL2_VAR_KEY}_MODEL"] = df_clean[KOL_PROVINSI].map(bansos_log_prov)
 
-except FileNotFoundError as e:
-    st.error(f"⚠️ File tidak ditemukan: {e.filename}")
-    st.stop()
+    except FileNotFoundError as e:
+        st.error(f"⚠️ File tidak ditemukan: {e.filename}")
+        st.stop()
 
 
 @st.cache_data
