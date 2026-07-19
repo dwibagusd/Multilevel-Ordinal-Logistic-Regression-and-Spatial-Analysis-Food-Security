@@ -505,7 +505,7 @@ def halaman_bayesian():
         tahan_sim = (pred_sim == 2).sum()
         total_wilayah = len(df_clean)
 
-        st.markdown("---")
+        # st.markdown("---")
         if rentan_sim < rentan_awal:
             pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
             st.success(pesan_rentan)
@@ -710,15 +710,33 @@ def halaman_simulasi_lokal():
                 delta_class = "delta-neutral"
                 delta_str = "0.0%"
 
+            # Konstruksi HTML menggunakan Flexbox tanpa gaya inline
             html_content = f"""
-            <div class="metric-card" style="padding: 10px;">
-                <div class="metric-title" style="font-size: 0.7rem;">{label}</div>
-                <div class="metric-unit" style="font-size: 0.55rem; margin-bottom: 4px;">{unit}</div>
-                <div class="metric-value" style="font-size: 1.25rem;">{formatted_val}</div>
-                <div class="metric-delta {delta_class}">{arrow} {delta_str}</div>
+            <div class="metric-card">
+                <div class="metric-title">{label}</div>
+                <div class="metric-unit">{unit}</div>
+                <!-- Flexbox Container untuk menyejajarkan nilai dan indikator -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="metric-value">{formatted_val}</div>
+                    <div class="metric-delta {delta_class}">{arrow} {delta_str}</div>
+                </div>
             </div>
             """
-            target_col.markdown(html_content, unsafe_allow_html=True)
+            # target_col.markdown(html_content, unsafe_allow_html=True)
+            # else:
+            #     arrow = "→"
+            #     delta_class = "delta-neutral"
+            #     delta_str = "0.0%"
+
+            # html_content = f"""
+            # <div class="metric-card" style="padding: 10px;">
+            #     <div class="metric-title" style="font-size: 0.7rem;">{label}</div>
+            #     <div class="metric-unit" style="font-size: 0.55rem; margin-bottom: 4px;">{unit}</div>
+            #     <div class="metric-value" style="font-size: 1.25rem;">{formatted_val}</div>
+            #     <div class="metric-delta {delta_class}">{arrow} {delta_str}</div>
+            # </div>
+            # """
+            # target_col.markdown(html_content, unsafe_allow_html=True)
 
     with col_kanan:
         df_map_local = df_sim_local[df_sim_local[KOL_PROVINSI] == prov_terpilih]
