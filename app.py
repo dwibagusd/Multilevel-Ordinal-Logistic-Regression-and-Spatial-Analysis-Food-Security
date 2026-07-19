@@ -54,7 +54,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # URL GeoJSON & Nama File CSV
-URL_GEOJSON = "https://raw.githubusercontent.com/dwibagusd/Multilevel-Ordinal-Logistic-Regression-and-Spatial-Analysis-Food-Security/refs/heads/main/Data/peta_indonesia_comp.json"
+# URL_GEOJSON = "https://raw.githubusercontent.com/dwibagusd/Multilevel-Ordinal-Logistic-Regression-and-Spatial-Analysis-Food-Security/refs/heads/main/Data/peta_indonesia_comp.json"
+URL_GEOJSON = "https://raw.githubusercontent.com/dwibagusd/Multilevel-Ordinal-Logistic-Regression-and-Spatial-Analysis-Food-Security/refs/heads/main/Data/peta_indonesia_terbaru.json"
 CSV_FILENAME = "data_ringan.csv"
 MATRIKS_FILENAME = "matriks_bobot_penuh.csv"
 
