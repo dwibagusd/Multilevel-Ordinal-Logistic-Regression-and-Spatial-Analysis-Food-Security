@@ -704,11 +704,29 @@ def halaman_spasial():
         st.error(f"Variabel '{TARGET_KAB}' tidak ditemukan di dataset.")
         st.stop()
 
+    # 1. PERBAIKAN ALIGNMENT: Menyamakan urutan baris df_spasial dengan matriks bobot
+    # Menggunakan index dari KAB_KOTA untuk dicocokkan dengan w_spasial.id_order
+    try:
+        df_spasial = df_spasial.set_index(KOL_KAB_KOTA)
+        df_spasial = df_spasial.loc[w_spasial.id_order].reset_index()
+    except KeyError as e:
+        st.error(f"Gagal mencocokkan urutan data spasial. Pastikan nama wilayah di CSV sama dengan Matriks Spasial: {e}")
+        st.stop()
+
+    # 2. Kalkulasi Moran
     y_spasial = df_spasial[TARGET_KAB].values
     moran = Moran(y_spasial, w_spasial)
     moran_loc = Moran_Local(y_spasial, w_spasial)
+    
+    # 3. PERBAIKAN METODE: Gunakan pendekatan Normalitas (Sama seperti file proyek)
+    z_val = getattr(moran, "z_norm", None)
+    p_val = getattr(moran, "p_norm", None)
+    
+    # Fallback jika versi PySAL tidak mendukung z_norm secara default
+    if z_val is None: z_val = moran.z_sim
+    if p_val is None: p_val = moran.p_sim
 
-    signifikan = moran_loc.p_norm < 0.05
+    signifikan = moran_loc.p_sim < 0.05
     kuadran = moran_loc.q
 
     df_spasial['cluster_label'] = 'Tidak Signifikan (ns)'
@@ -739,8 +757,8 @@ def halaman_spasial():
         st.markdown(html_moran, unsafe_allow_html=True)
 
         html_pval = f"""
-        <div class="metric-card"><div class="metric-title">P-Value Signifikansi</div><div class="metric-unit">Uji Permutasi</div>
-        <div class="metric-value">{moran.p_norm:.4f}</div><div class="metric-delta {'delta-positive' if moran.p_norm < 0.05 else 'delta-neutral'}">{'Signifikan (<0.05)' if moran.p_norm < 0.05 else 'Tidak Signifikan'}</div></div>
+        <div class="metric-card"><div class="metric-title">P-Value Signifikansi</div><div class="metric-unit">Asumsi Normalitas</div>
+        <div class="metric-value">{p_val:.4f}</div><div class="metric-delta {'delta-positive' if p_val < 0.05 else 'delta-neutral'}">{'Signifikan (<0.05)' if p_val < 0.05 else 'Tidak Signifikan'}</div></div>
         """
         st.markdown(html_pval, unsafe_allow_html=True)
 
@@ -751,13 +769,13 @@ def halaman_spasial():
         st.markdown(html_ei, unsafe_allow_html=True)
 
         html_zscore = f"""
-        <div class="metric-card"><div class="metric-title">Z-Score</div><div class="metric-unit">Standar Deviasi</div>
-        <div class="metric-value">{moran.z_norm:.4f}</div><div class="metric-delta {'delta-positive' if abs(moran.z_norm) >= 1.96 else 'delta-neutral'}">{'Signifikan (> ±1.96)' if abs(moran.z_norm) >= 1.96 else 'Tidak Kuat'}</div></div>
+        <div class="metric-card"><div class="metric-title">Z-Score</div><div class="metric-unit">Pendekatan Normal</div>
+        <div class="metric-value">{z_val:.4f}</div><div class="metric-delta {'delta-positive' if abs(z_val) >= 1.96 else 'delta-neutral'}">{'Signifikan (> ±1.96)' if abs(z_val) >= 1.96 else 'Tidak Kuat'}</div></div>
         """
         st.markdown(html_zscore, unsafe_allow_html=True)
 
-        if moran.p_norm < 0.05:
-            if moran.z_norm > 0:
+        if p_val < 0.05:
+            if z_val > 0:
                 kesimpulan = "Clustered"
                 delta_kesimpulan = "Mengelompok"
                 warna_kesimpulan = "delta-positive"
@@ -786,10 +804,10 @@ def halaman_spasial():
 
             fig_lisa = px.choropleth_map(
                 df_filtered_spasial, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
-                color="cluster_label", color_discrete_map=warna_cluster, map_style="basic", zoom=zoom_val,
+                color="cluster_label", color_discrete_map=warna_cluster, map_style="carto-positron", zoom=zoom_val,
                 center=center_koor, opacity=0.9, hover_name=KOL_KAB_KOTA,
                 hover_data={TARGET_KAB: True, "cluster_label": False},
-                height=530
+                height=650
             )
             fig_lisa.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
