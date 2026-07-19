@@ -722,7 +722,7 @@ def halaman_simulasi_lokal():
                 </div>
             </div>
             """
-            # target_col.markdown(html_content, unsafe_allow_html=True)
+            target_col.markdown(html_content, unsafe_allow_html=True)
             # else:
             #     arrow = "→"
             #     delta_class = "delta-neutral"
