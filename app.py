@@ -166,8 +166,24 @@ def get_map_view(prov_list):
 # =============================================================================
 DESKRIPSI_INDIKATOR = {
     "status_ketahanan": "Prediksi status ketahanan pangan wilayah. Prediksi ini menggunakan model Bayesian Multilevel Ordinal Logistic Regression yang telah dilatih dengan data historis.",
-    TARGET_KAB: f"Nilai Indeks Aktual ({TARGET_KAB}) berdasarkan data observasi asli sebelum dikenakan intervensi simulasi.",
-    LEVEL2_VAR_KEY: f"{LEVEL2_VAR_LABEL} merupakan alokasi anggaran bantuan sosial dari tingkat provinsi. Variabel ini bertindak sebagai intervensi level-2 dalam model multilevel.",
+    TARGET_KAB: f"Nilai komposit (gabungan) akhir yang diperoleh dari penghitungan seluruh indikator. IKP digunakan oleh Bapanas untuk memetakan peringkat ketahanan pangan wilayah sekaligus mengidentifikasi daerah yang rentan atau tahan pangan.",
+    LEVEL2_VAR_KEY: "Jumlah dana aktual (realisasi belanja negara) yang telah dikeluarkan dan dimanfaatkan oleh pemerintah untuk membiayai program perlindungan sosial yang berfokus pada pemenuhan kebutuhan pangan masyarakat miskin dan rentan.",
+    "NCPR": "Rasio antara konsumsi pangan normatif penduduk terhadap produksi bersih pangan utama (biasanya padi dan jagung) di suatu wilayah. Indikator ini mengukur sejauh mana produksi lokal mampu memenuhi kebutuhan pangan mandiri.",
+    "CBPK": "Jumlah stok atau cadangan pangan (khususnya beras) yang dikelola oleh pemerintah daerah. Variabel ini mengukur kesiapan instrumen jaring pengaman pangan daerah dalam menghadapi keadaan darurat atau krisis pangan.",
+    "MISKIN": "Proporsi penduduk yang pengeluaran per kapitanya berada di bawah Garis Kemiskinan. Indikator utama untuk mengukur hambatan ekonomi masyarakat dalam menjangkau pangan yang cukup dan bergizi.",
+    "CVHARGA": "Ukuran ketidakstabilan atau fluktuasi harga pangan pokok (seperti beras) dari waktu ke waktu. Semakin tinggi nilai koefisiennya, semakin tidak stabil harga pangan di wilayah tersebut, yang berisiko mengganggu akses pangan masyarakat.",
+    "TNPAIR": "Persentase rumah tangga yang belum memiliki akses ke sumber air minum atau air bersih yang layak. Air bersih sangat krusial agar pangan yang dikonsumsi tidak menjadi sumber penyakit.",
+    "TNPLISTRIK": "Persentase rumah tangga yang belum terjangkau oleh jaringan listrik. Fasilitas listrik penting untuk mendukung penyimpanan pangan yang aman (seperti kulkas) dan pengolahan pangan yang higienis.",
+    "ENERGI": "Persentase rata-rata konsumsi energi per kapita per hari dibandingkan dengan Angka Kecukupan Energi (AKE) yang dianjurkan. Menunjukkan kuantitas kecukupan kalori masyarakat.",
+    "PROHE": "Tingkat kecukupan atau rata-rata konsumsi protein yang bersumber dari hewan (daging, ikan, telur, susu). Indikator ini mencerminkan kualitas asupan gizi mikro yang penting untuk pertumbuhan.",
+    "POU": "Prevalensi Ketidakcukupan Konsumsi Pangan, yaitu persentase populasi yang konsumsi energi pangan hariannya berada di bawah tingkat kebutuhan energi minimal (MDER) untuk hidup sehat dan aktif.",
+    "RLSP": "Rata-rata jumlah tahun yang ditempuh oleh perempuan usia 25 tahun ke atas dalam pendidikan formal. Indikator ini mengukur kapasitas pengetahuan ibu/perempuan dalam mengelola pola asuh, gizi, dan kesehatan keluarga.",
+    "NAKES": "Ketersediaan atau rasio jumlah tenaga kesehatan (seperti dokter, bidan, dan perawat) per satuan jumlah penduduk. Penting untuk memantau pelayanan kesehatan yang berdampak langsung pada penyerapan gizi tubuh.",
+    "AHH": "Perkiraan rata-rata jumlah tahun yang dapat ditempuh oleh seseorang sejak lahir. AHH digunakan sebagai indikator dampak jangka panjang dari derajat kesehatan dan kecukupan gizi masyarakat.",
+    "AMANPANGN": "Kondisi sanitasi dan pengawasan untuk memastikan pangan bebas dari cemaran biologis, kimia, dan fisik yang dapat membahayakan kesehatan manusia.",
+    "PPH": "Instrumen atau skor yang menilai mutu dan keberagaman konsumsi pangan masyarakat berdasarkan proporsi keseimbangan energi dari 9 kelompok pangan utama. Skor PPH yang tinggi menunjukkan konsumsi yang makin beragam dan bergizi seimbang.",
+    "STUNTING": "Persentase balita (anak di bawah 5 tahun) yang mengalami gangguan pertumbuhan sehingga tinggi badannya lebih pendek dari standar usianya. Merupakan indikator dampak dari masalah kekurangan gizi kronis di suatu daerah.",
+    "lisa_cluster": "Pemetaan Kluster Spasial (LISA) untuk mengidentifikasi autokorelasi lokal. Hotspot (HH) menunjukkan daerah yang dikelilingi wilayah dengan pola serupa, Coldspot (LL) mewakili konsentrasi kerentanan, sementara Outlier (HL/LH) mencerminkan kondisi anomali spasial."
 }
 
 # Membuat deskripsi default untuk variabel Level 1 berdasarkan konfigurasi yang sudah ada
@@ -283,12 +299,34 @@ status_map = {0: "Rentan", 1: "Tahan", 2: "Sangat Tahan"}
 # 3. FUNGSI HALAMAN 0: PETA PENUH
 # -----------------------------------------------------------------------------
 def halaman_peta_penuh():
+    # 1. Prediksi Base
     pred_base = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
+    
+    # 2. Kalkulasi LISA Terpusat (Wajib dilakukan pra-filter)
     df_map = df_clean.copy()
+    
+    # Re-indexing untuk kepastian keselarasan spasial (spatial alignment check)
+    df_map = df_map.set_index(KOL_KAB_KOTA)
+    df_map = df_map.loc[w_spasial.id_order].reset_index()
+    
+    y_spasial = df_map[TARGET_KAB].values
+    moran_loc = Moran_Local(y_spasial, w_spasial)
+    
+    signifikan = moran_loc.p_sim < 0.05
+    kuadran = moran_loc.q
+
+    df_map['lisa_cluster'] = 'Tidak Signifikan (ns)'
+    df_map.loc[signifikan & (kuadran == 1), 'lisa_cluster'] = 'HH (Hotspot)'
+    df_map.loc[signifikan & (kuadran == 3), 'lisa_cluster'] = 'LL (Coldspot)'
+    df_map.loc[signifikan & (kuadran == 4), 'lisa_cluster'] = 'HL (Outlier)'
+    df_map.loc[signifikan & (kuadran == 2), 'lisa_cluster'] = 'LH (Outlier)'
+    
     df_map["status_ketahanan"] = pd.Series(pred_base).map(status_map)
     
+    # 3. Penyesuaian Kamus Opsi Filter
     opsi_indikator = {
         "Prediksi Model (Status Ketahanan)": "status_ketahanan",
+        "Kluster Spasial (LISA)": "lisa_cluster",
         f"Indeks Aktual ({TARGET_KAB})": TARGET_KAB
     }
     for key, cfg in LEVEL1_VARS.items():
@@ -311,12 +349,15 @@ def halaman_peta_penuh():
             placeholder="Tampilkan Seluruh Indonesia",
             label_visibility="collapsed"
         )
-        
+
+    # 4. Injeksi Dinamis Teks Keterangan UI
     teks_keterangan = DESKRIPSI_INDIKATOR.get(
         kolom_target, 
         "Keterangan detail belum tersedia untuk indikator ini."
     )
-            
+    st.info(f"💡 **Informasi Indikator:** {teks_keterangan}")
+        
+    # 5. Filtering Slicing (Eksekusi setelah algoritma analitik selesai)
     if filter_prov:
         df_map = df_map[df_map[KOL_PROVINSI].isin(filter_prov)]
         
@@ -336,6 +377,16 @@ def halaman_peta_penuh():
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
                 height=450 
             )
+        elif kolom_target == "lisa_cluster":
+            warna_cluster = {'HH (Hotspot)': '#16a34a', 'LL (Coldspot)': '#dc2626', 'HL (Outlier)': '#86efac', 'LH (Outlier)': '#fca5a5', 'Tidak Signifikan (ns)': '#e5e7eb'}
+            fig = px.choropleth_map(
+                df_map, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
+                color=kolom_target, 
+                color_discrete_map=warna_cluster,
+                map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.9,
+                hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI, TARGET_KAB],
+                height=450 
+            )
         else:
             is_inv = False
             if kolom_target in LEVEL1_VARS:
@@ -349,7 +400,7 @@ def halaman_peta_penuh():
                 color_continuous_scale=colorscale,
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=400 
+                height=450 
             )
             
         fig.update_layout(
@@ -361,7 +412,87 @@ def halaman_peta_penuh():
             )
         )
         st.plotly_chart(fig, use_container_width=True)
-        st.info(f"{teks_keterangan}")
+        
+# def halaman_peta_penuh():
+#     pred_base = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
+#     df_map = df_clean.copy()
+#     df_map["status_ketahanan"] = pd.Series(pred_base).map(status_map)
+    
+#     opsi_indikator = {
+#         "Prediksi Model (Status Ketahanan)": "status_ketahanan",
+#         f"Indeks Aktual ({TARGET_KAB})": TARGET_KAB
+#     }
+#     for key, cfg in LEVEL1_VARS.items():
+#         opsi_indikator[f"{cfg['label']} ({cfg['unit']})"] = key
+#     opsi_indikator[f"{LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})"] = LEVEL2_VAR_KEY
+    
+#     col_kiri, col_kanan = st.columns(2)
+#     with col_kiri:
+#         pilihan_label = st.selectbox(
+#             "Pilih Indikator Peta:", 
+#             options=list(opsi_indikator.keys()),
+#             label_visibility="collapsed" 
+#         )
+#         kolom_target = opsi_indikator[pilihan_label]
+        
+#     with col_kanan:
+#         filter_prov = st.multiselect(
+#             "Filter Provinsi:", 
+#             options=sorted(df_map[KOL_PROVINSI].unique()),
+#             placeholder="Tampilkan Seluruh Indonesia",
+#             label_visibility="collapsed"
+#         )
+        
+#     teks_keterangan = DESKRIPSI_INDIKATOR.get(
+#         kolom_target, 
+#         "Keterangan detail belum tersedia untuk indikator ini."
+#     )
+            
+#     if filter_prov:
+#         df_map = df_map[df_map[KOL_PROVINSI].isin(filter_prov)]
+        
+#     if df_map.empty:
+#         st.warning("Peringatan: Data tidak tersedia untuk wilayah yang dipilih.")
+#         return
+        
+#     center_koor, zoom_val = get_map_view(filter_prov) if filter_prov else ({"lat": -2.5, "lon": 118}, 4.8)
+    
+#     with st.spinner("Memuat visualisasi layar penuh..."):
+#         if kolom_target == "status_ketahanan":
+#             fig = px.choropleth_map(
+#                 df_map, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
+#                 color=kolom_target, 
+#                 color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
+#                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
+#                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
+#                 height=450 
+#             )
+#         else:
+#             is_inv = False
+#             if kolom_target in LEVEL1_VARS:
+#                 is_inv = LEVEL1_VARS[kolom_target].get("is_inverse", False)
+                
+#             colorscale = "RdYlGn_r" if is_inv else "RdYlGn"
+            
+#             fig = px.choropleth_map(
+#                 df_map, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
+#                 color=kolom_target,
+#                 color_continuous_scale=colorscale,
+#                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
+#                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
+#                 height=400 
+#             )
+            
+#         fig.update_layout(
+#             margin={"r": 0, "t": 0, "l": 0, "b": 0},
+#             paper_bgcolor="rgba(0,0,0,0)",
+#             legend=dict(
+#                 orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title="",
+#                 bgcolor="rgba(255, 255, 255, 0.7)" 
+#             )
+#         )
+#         st.plotly_chart(fig, use_container_width=True)
+#         st.info(f"{teks_keterangan}")
 
 # -----------------------------------------------------------------------------
 # 3. FUNGSI HALAMAN 1: BAYESIAN MULTILEVEL
@@ -883,7 +1014,7 @@ def halaman_spasial():
             st.plotly_chart(fig_lisa, use_container_width=True)
 
     st.write("---")
-    st.subheader("Data Klaster Spasial")
+    # st.subheader("Data Klaster Spasial")
     kolom_spasial = [KOL_KAB_KOTA, KOL_PROVINSI, "cluster_label", TARGET_KAB]
     st.dataframe(df_filtered_spasial[kolom_spasial], use_container_width=True, hide_index=True)
 
