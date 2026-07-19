@@ -165,7 +165,7 @@ def get_map_view(prov_list):
 # KONFIGURASI KETERANGAN INDIKATOR UNTUK UI
 # =============================================================================
 DESKRIPSI_INDIKATOR = {
-    "status_ketahanan": "Prediksi status ketahanan pangan wilayah. Prediksi ini menggunakan model Bayesian Multilevel Ordinal Logistic Regression yang telah dilatih dengan data historis.",
+    "status_ketahanan": "Prediksi status ketahanan pangan wilayah. Prediksi ini menggunakan model Bayesian Spatial Multilevel Ordinal Logistic Regression yang telah dilatih dengan data historis.",
     TARGET_KAB: f"Nilai komposit (gabungan) akhir yang diperoleh dari penghitungan seluruh indikator. IKP digunakan oleh Bapanas untuk memetakan peringkat ketahanan pangan wilayah sekaligus mengidentifikasi daerah yang rentan atau tahan pangan.",
     LEVEL2_VAR_KEY: "Jumlah dana aktual (realisasi belanja negara) yang telah dikeluarkan dan dimanfaatkan oleh pemerintah untuk membiayai program perlindungan sosial yang berfokus pada pemenuhan kebutuhan pangan masyarakat miskin dan rentan.",
     "NCPR": "Rasio antara konsumsi pangan normatif penduduk terhadap produksi bersih pangan utama (biasanya padi dan jagung) di suatu wilayah. Indikator ini mengukur sejauh mana produksi lokal mampu memenuhi kebutuhan pangan mandiri.",
@@ -355,7 +355,6 @@ def halaman_peta_penuh():
         kolom_target, 
         "Keterangan detail belum tersedia untuk indikator ini."
     )
-    st.info(f"💡 **Informasi Indikator:** {teks_keterangan}")
         
     # 5. Filtering Slicing (Eksekusi setelah algoritma analitik selesai)
     if filter_prov:
@@ -412,6 +411,7 @@ def halaman_peta_penuh():
             )
         )
         st.plotly_chart(fig, use_container_width=True)
+    st.info(f"**Keterangan:** {teks_keterangan}")
         
 # def halaman_peta_penuh():
 #     pred_base = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
