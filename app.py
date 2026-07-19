@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
-    /* 1. Mengatur Kontainer Utama agar Lebar Penuh di SEMUA halaman */
+    /* 1. Mengatur Kontainer Utama agar Lebar Penuh di SEMUA  */
     .block-container {
         padding-top: 2rem !important;
         padding-bottom: 1rem !important;
@@ -708,7 +708,7 @@ def halaman_spasial():
     moran = Moran(y_spasial, w_spasial)
     moran_loc = Moran_Local(y_spasial, w_spasial)
 
-    signifikan = moran_loc.p_sim < 0.05
+    signifikan = moran_loc.p_norm < 0.05
     kuadran = moran_loc.q
 
     df_spasial['cluster_label'] = 'Tidak Signifikan (ns)'
@@ -740,7 +740,7 @@ def halaman_spasial():
 
         html_pval = f"""
         <div class="metric-card"><div class="metric-title">P-Value Signifikansi</div><div class="metric-unit">Uji Permutasi</div>
-        <div class="metric-value">{moran.p_sim:.4f}</div><div class="metric-delta {'delta-positive' if moran.p_sim < 0.05 else 'delta-neutral'}">{'Signifikan (<0.05)' if moran.p_sim < 0.05 else 'Tidak Signifikan'}</div></div>
+        <div class="metric-value">{moran.p_norm:.4f}</div><div class="metric-delta {'delta-positive' if moran.p_norm < 0.05 else 'delta-neutral'}">{'Signifikan (<0.05)' if moran.p_norm < 0.05 else 'Tidak Signifikan'}</div></div>
         """
         st.markdown(html_pval, unsafe_allow_html=True)
 
@@ -752,12 +752,12 @@ def halaman_spasial():
 
         html_zscore = f"""
         <div class="metric-card"><div class="metric-title">Z-Score</div><div class="metric-unit">Standar Deviasi</div>
-        <div class="metric-value">{moran.z_sim:.4f}</div><div class="metric-delta {'delta-positive' if abs(moran.z_sim) >= 1.96 else 'delta-neutral'}">{'Signifikan (> ±1.96)' if abs(moran.z_sim) >= 1.96 else 'Tidak Kuat'}</div></div>
+        <div class="metric-value">{moran.z_norm:.4f}</div><div class="metric-delta {'delta-positive' if abs(moran.z_norm) >= 1.96 else 'delta-neutral'}">{'Signifikan (> ±1.96)' if abs(moran.z_norm) >= 1.96 else 'Tidak Kuat'}</div></div>
         """
         st.markdown(html_zscore, unsafe_allow_html=True)
 
-        if moran.p_sim < 0.05:
-            if moran.z_sim > 0:
+        if moran.p_norm < 0.05:
+            if moran.z_norm > 0:
                 kesimpulan = "Clustered"
                 delta_kesimpulan = "Mengelompok"
                 warna_kesimpulan = "delta-positive"
