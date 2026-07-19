@@ -298,15 +298,11 @@ def halaman_peta_penuh():
             label_visibility="collapsed"
         )
         
-        teks_keterangan = DESKRIPSI_INDIKATOR.get(
-            kolom_target, 
-            "Keterangan detail belum tersedia untuk indikator ini."
-        )
-    
-    # Menampilkannya dengan gaya notifikasi yang rapi sebelum peta
-    st.info(f"{teks_keterangan}")
-    # --- AKHIR BAGIAN MODIFIKASI ---
-        
+    teks_keterangan = DESKRIPSI_INDIKATOR.get(
+        kolom_target, 
+        "Keterangan detail belum tersedia untuk indikator ini."
+    )
+            
     if filter_prov:
         df_map = df_map[df_map[KOL_PROVINSI].isin(filter_prov)]
         
@@ -324,7 +320,7 @@ def halaman_peta_penuh():
                 color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=850 
+                height=700 
             )
         else:
             is_inv = False
@@ -339,7 +335,7 @@ def halaman_peta_penuh():
                 color_continuous_scale=colorscale,
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=850 
+                height=700 
             )
             
         fig.update_layout(
@@ -351,6 +347,7 @@ def halaman_peta_penuh():
             )
         )
         st.plotly_chart(fig, use_container_width=True)
+        st.info(f"{teks_keterangan}")
 
 # -----------------------------------------------------------------------------
 # 3. FUNGSI HALAMAN 1: BAYESIAN MULTILEVEL
