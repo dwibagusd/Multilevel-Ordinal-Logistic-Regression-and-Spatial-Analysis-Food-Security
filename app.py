@@ -320,7 +320,7 @@ def halaman_peta_penuh():
                 color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=700 
+                height=500 
             )
         else:
             is_inv = False
@@ -335,7 +335,7 @@ def halaman_peta_penuh():
                 color_continuous_scale=colorscale,
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=700 
+                height=500 
             )
             
         fig.update_layout(
