@@ -449,15 +449,27 @@ def halaman_bayesian():
         """
         col.markdown(html_content, unsafe_allow_html=True)
 
+    # Rasio kolom utama tetap dipertahankan, Anda bisa mengubah ke [3.5, 6.5] jika ingin kartu lebih lebar lagi
     col_kiri, col_kanan = st.columns([3, 7])
 
     with col_kiri:
-        sub_c1, sub_c2, sub_c3 = st.columns(3)
-        sub_cols = [sub_c1, sub_c2, sub_c3]
+        # Mengubah dari 3 sub-kolom menjadi 2 sub-kolom agar ruang horizontal lebih luas
+        sub_c1, sub_c2 = st.columns(2)
+        sub_cols = [sub_c1, sub_c2]
 
+        # Mendistribusikan 15 variabel Level 1 secara merata ke dalam 2 kolom
         for i, (key, cfg) in enumerate(LEVEL1_VARS.items()):
-            render_custom_metric(sub_cols[i % 3], cfg["label"], cfg["unit"], key, is_inverse=cfg["is_inverse"])
-        render_custom_metric(sub_cols[len(LEVEL1_VARS) % 3], LEVEL2_VAR_LABEL, LEVEL2_VAR_UNIT, LEVEL2_VAR_KEY, is_absolute=True)
+            render_custom_metric(sub_cols[i % 2], cfg["label"], cfg["unit"], key, is_inverse=cfg["is_inverse"])
+        
+        # Memasukkan variabel BANSOS di akhir (elemen ke-16, otomatis mengisi ruang terakhir di baris 8)
+        render_custom_metric(sub_cols[len(LEVEL1_VARS) % 2], LEVEL2_VAR_LABEL, LEVEL2_VAR_UNIT, LEVEL2_VAR_KEY, is_absolute=True)
+    # with col_kiri:
+    #     sub_c1, sub_c2, sub_c3 = st.columns(3)
+    #     sub_cols = [sub_c1, sub_c2, sub_c3]
+
+    #     for i, (key, cfg) in enumerate(LEVEL1_VARS.items()):
+    #         render_custom_metric(sub_cols[i % 3], cfg["label"], cfg["unit"], key, is_inverse=cfg["is_inverse"])
+        # render_custom_metric(sub_cols[len(LEVEL1_VARS) % 3], LEVEL2_VAR_LABEL, LEVEL2_VAR_UNIT, LEVEL2_VAR_KEY, is_absolute=True)
 
     with col_kanan:
         df_filtered_bayes = df_sim.copy()
