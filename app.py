@@ -320,7 +320,7 @@ def halaman_peta_penuh():
                 color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=500 
+                height=400 
             )
         else:
             is_inv = False
@@ -335,7 +335,7 @@ def halaman_peta_penuh():
                 color_continuous_scale=colorscale,
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=500 
+                height=400 
             )
             
         fig.update_layout(
@@ -461,7 +461,7 @@ def halaman_bayesian():
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI, "MISKIN"] if "MISKIN" in df_filtered_bayes.columns else [KOL_PROVINSI],
-                height=530
+                height=400
             )
             fig_map.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
@@ -700,7 +700,7 @@ def halaman_simulasi_lokal():
             color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
             map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.9,
             hover_name=KOL_KAB_KOTA, hover_data={"status_ketahanan": True},
-            height=530
+            height=400
         )
         fig_map_local.update_layout(
             legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
