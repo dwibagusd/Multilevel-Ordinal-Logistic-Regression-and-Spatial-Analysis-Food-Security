@@ -94,8 +94,8 @@ LEVEL1_VARS = {
     "STUNTING":   {"label": "Stunting",                       "unit": "% Balita",            "is_inverse": True,  "clip": "pct"},
 }
 LEVEL2_VAR_KEY = "BANSOS"
-LEVEL2_VAR_LABEL = "Bansos"
-LEVEL2_VAR_UNIT = "Z-Score"
+LEVEL2_VAR_LABEL = "Anggaran Bansos"
+LEVEL2_VAR_UNIT = "Triliun Rupiah"
 
 TARGET_KAB = "IKP"          # variabel respons/komposit tingkat kab/kota untuk Moran's I
 KOL_KAB_KOTA = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv (sesuaikan bila berbeda)
@@ -353,14 +353,20 @@ def halaman_bayesian():
     label_terpilih = st.sidebar.multiselect("Filter Status:", options=["Rentan", "Tahan", "Sangat Tahan"], key="label_bayes", placeholder="Semua Status")
     st.sidebar.subheader("Simulasi What-If")
 
-    with st.sidebar.expander("Level 1 (Kabupaten/Kota)", expanded=True):
+    with st.sidebar.expander("Level Kabupaten/Kota", expanded=True):
         for key, cfg in LEVEL1_VARS.items():
             lo, hi = cfg.get("slider_range", (-50, 50))
             step = 1 if (hi - lo) <= 20 else 5
             st.slider(f"{cfg['label']} (%)", lo, hi, 0, key=f"sim_{key}", step=step)
 
-    with st.sidebar.expander("Level 2 (Provinsi)", expanded=True):
-        sim_bansos = st.slider(f"{LEVEL2_VAR_LABEL} (Z-Score Absolute)", -2.0, 2.0, 0.0, key=f"sim_{LEVEL2_VAR_KEY}", step=0.1)
+    with st.sidebar.expander("Level Provinsi", expanded=True):
+        # Rentang diperlebar dari -10.0 hingga 10.0 Triliun, dengan step 0.5 (500 Miliar)
+        sim_bansos = st.slider(
+            f"Penyesuaian {LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})", 
+            -10.0, 10.0, 0.0, 
+            key=f"sim_{LEVEL2_VAR_KEY}", 
+            step=0.5
+        )
 
     # Menerapkan rumus perubahan interaktif dengan perlindungan batas (clipping)
     df_sim = df_clean.copy()
@@ -454,16 +460,16 @@ def halaman_bayesian():
         tahan_sim = (pred_sim == 2).sum()
         total_wilayah = len(df_clean)
 
-    if rentan_sim < rentan_awal:
-        pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
-        st.success(pesan_rentan)
-    elif rentan_sim > rentan_awal:
-        pesan_rentan = f"⚠️ Waspada! Terdapat **{rentan_sim - rentan_awal} daerah baru** jatuh ke zona Rentan."
-        st.error(pesan_rentan)
-    else:
-        pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
-        st.info(pesan_rentan)
-    st.info(f"💡 **Dampak Kebijakan Nasional:**\n* {pesan_rentan}\n* Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.")
+        if rentan_sim < rentan_awal:
+            pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
+            st.success(pesan_rentan)
+        elif rentan_sim > rentan_awal:
+            pesan_rentan = f"⚠️ Waspada! Terdapat **{rentan_sim - rentan_awal} daerah baru** jatuh ke zona Rentan."
+            st.error(pesan_rentan)
+        else:
+            pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
+            st.info(pesan_rentan)
+        st.info(f"💡 **Dampak Kebijakan Nasional:**\n* {pesan_rentan}\n* Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.")
 
 
 # -----------------------------------------------------------------------------
@@ -479,13 +485,13 @@ def halaman_simulasi_provinsi():
     nilai_awal_bansos = float(df_base[df_base[KOL_PROVINSI] == prov_terpilih][LEVEL2_VAR_KEY].iloc[0])
 
     with st.sidebar.form("form_provinsi"):
-        st.markdown("#### Intervensi Anggaran Bansos Pangan")
+        st.markdown(f"#### Intervensi {LEVEL2_VAR_LABEL}")
         new_bansos = st.number_input(
-            "Anggaran Bansos",
-            value=nilai_awal_bansos,
-            step=0.1
+            f"Alokasi Baru ({LEVEL2_VAR_UNIT})",
+            value=float(nilai_awal_bansos),
+            step=0.5 # Loncatan per 500 Miliar Rupiah
         )
-        submit_prov = st.form_submit_button("Enter", use_container_width=True)
+        submit_prov = st.form_submit_button("Jalankan Simulasi", use_container_width=True)
 
     df_sim_prov = df_base.copy()
     df_sim_prov.loc[df_sim_prov[KOL_PROVINSI] == prov_terpilih, LEVEL2_VAR_KEY] = new_bansos
@@ -684,15 +690,15 @@ def halaman_simulasi_lokal():
         )
         st.plotly_chart(fig_map_local, use_container_width=True)
 
-    idx_awal = pred_awal_global[idx_kab]
-    idx_baru = pred_sim_local[idx_kab]
-
-    if idx_baru > idx_awal:
-        st.success(f"🎉 **Dampak Positif!** Variabel simulasi berhasil meningkatkan status **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
-    elif idx_baru < idx_awal:
-        st.error(f"⚠️ **Waspada!** Perubahan variabel menyebabkan penurunan ketahanan pangan di **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
-    else:
-        st.info(f"💡 **Stagnan:** Nilai yang diterapkan belum merubah status ketahanan pangan **{selected_kab}** (Tetap **{status_awal_str}**).")
+        idx_awal = pred_awal_global[idx_kab]
+        idx_baru = pred_sim_local[idx_kab]
+    
+        if idx_baru > idx_awal:
+            st.success(f"🎉 **Dampak Positif!** Variabel simulasi berhasil meningkatkan status **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
+        elif idx_baru < idx_awal:
+            st.error(f"⚠️ **Waspada!** Perubahan variabel menyebabkan penurunan ketahanan pangan di **{selected_kab}** dari **{status_awal_str}** menjadi **{status_baru_str}**.")
+        else:
+            st.info(f"💡 **Stagnan:** Nilai yang diterapkan belum merubah status ketahanan pangan **{selected_kab}** (Tetap **{status_awal_str}**).")
 
 
 # -----------------------------------------------------------------------------
@@ -824,15 +830,15 @@ def halaman_spasial():
 # -----------------------------------------------------------------------------
 # 5. SETUP NAVIGATION & EKSEKUSI
 # -----------------------------------------------------------------------------
-page_0 = st.Page(halaman_peta_penuh, title="Visualisasi Peta Utama", default=True)
-page_1 = st.Page(halaman_bayesian, title="Model Bayesian")
-page_2 = st.Page(halaman_simulasi_lokal, title="Simulasi Level 1 (Kabupaten/Kota)")
-page_3 = st.Page(halaman_simulasi_provinsi, title="Simulasi Level 2 (Provinsi)")
+page_0 = st.Page(halaman_peta_penuh, title="Eksplorasi Data Spasial", default=True)
+page_1 = st.Page(halaman_bayesian, title="Model Utama")
+page_2 = st.Page(halaman_simulasi_lokal, title="Simulasi Level Kabupaten/Kota")
+page_3 = st.Page(halaman_simulasi_provinsi, title="Simulasi Level Provinsi")
 page_4 = st.Page(halaman_spasial, title="Analisis Spasial")
 
 pg = st.navigation({
-    "Eksplorasi Analisis": [page_0],
-    "Menu Analisis Utama": [page_1, page_2, page_3, page_4]
+    "Home": [page_0],
+    "Analisis Lanjutan": [page_1, page_2, page_3, page_4]
 })
 
 pg.run()
