@@ -363,7 +363,7 @@ def halaman_bayesian():
         # Rentang diperlebar dari -10.0 hingga 10.0 Triliun, dengan step 0.5 (500 Miliar)
         sim_bansos = st.slider(
             f"Penyesuaian {LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})", 
-            -10.0, 10.0, 0.0, 
+            -10000.0, 1000.0, 0.0, 
             key=f"sim_{LEVEL2_VAR_KEY}", 
             step=0.5
         )
@@ -394,7 +394,7 @@ def halaman_bayesian():
 
         # 1. Kustomisasi format teks khusus untuk variabel BANSOS
         if var_name == LEVEL2_VAR_KEY:
-            formatted_val = f"{val_sim:.2f} Triliun Rupiah" # Menambahkan teks langsung pada nilai
+            formatted_val = f"{val_sim:.2f}" # Menambahkan teks langsung pada nilai
             delta_str = f"{abs(delta):.2f} Triliun"         # Mengubah 'Poin' menjadi unit relevan
         else:
             formatted_val = f"{val_sim:.2f}"
