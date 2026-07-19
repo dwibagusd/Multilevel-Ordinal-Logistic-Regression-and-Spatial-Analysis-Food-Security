@@ -385,19 +385,26 @@ def halaman_bayesian():
     df_sim["status_ketahanan"] = df_sim["predik_label"].map(status_map)
 
     def render_custom_metric(col, label, unit_text, var_name, is_inverse=False, is_absolute=False):
-        if var_name not in df_clean.columns:
+        if var_name not in df_clean.columns: 
             return
+            
         val_awal = df_clean[var_name].mean()
         val_sim = df_sim[var_name].mean()
         delta = val_sim - val_awal
 
-        formatted_val = f"{val_sim:.2f}"
-        if is_absolute:
-            delta_str = f"{abs(delta):.2f} Poin"
+        # 1. Kustomisasi format teks khusus untuk variabel BANSOS
+        if var_name == LEVEL2_VAR_KEY:
+            formatted_val = f"{val_sim:.2f} Triliun Rupiah" # Menambahkan teks langsung pada nilai
+            delta_str = f"{abs(delta):.2f} Triliun"         # Mengubah 'Poin' menjadi unit relevan
         else:
-            pct_change = (delta / val_awal) * 100 if val_awal != 0 else 0
-            delta_str = f"{abs(pct_change):.1f}%"
+            formatted_val = f"{val_sim:.2f}"
+            if is_absolute:
+                delta_str = f"{abs(delta):.2f} Poin"
+            else:
+                pct_change = (delta / val_awal) * 100 if val_awal != 0 else 0
+                delta_str = f"{abs(pct_change):.1f}%"
 
+        # 2. Penentuan arah panah dan warna
         if delta > 0.001:
             arrow = "↑"
             delta_class = "delta-negative" if is_inverse else "delta-positive"
@@ -407,8 +414,12 @@ def halaman_bayesian():
         else:
             arrow = "→"
             delta_class = "delta-neutral"
-            delta_str = "0.0%" if not is_absolute else "0.00 Poin"
+            if var_name == LEVEL2_VAR_KEY:
+                delta_str = "0.00 Triliun"
+            else:
+                delta_str = "0.0%" if not is_absolute else "0.00 Poin"
 
+        # 3. Konstruksi HTML
         html_content = f"""
         <div class="metric-card">
             <div class="metric-title">{label}</div>
@@ -545,7 +556,7 @@ def halaman_simulasi_provinsi():
         st.markdown(html_turun, unsafe_allow_html=True)
 
         st.write("---")
-        st.markdown(f"**Anggaran Bansos:**\n* Awal: `{nilai_awal_bansos:.2f}`\n* Baru: `{new_bansos:.2f}`")
+        st.markdown(f"**Anggaran Bansos:**\n* Awal: `{nilai_awal_bansos:.2f} Triliun Rupiah`\n* Baru: `{new_bansos:.2f} Triliun Rupiah`")
         if new_bansos != nilai_awal_bansos:
             st.success("Cek tabel di bawah untuk melihat rincian Kab/Kota yang terdampak.")
     with col_kanan:
