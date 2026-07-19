@@ -491,7 +491,7 @@ def halaman_bayesian():
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI, "MISKIN"] if "MISKIN" in df_filtered_bayes.columns else [KOL_PROVINSI],
-                height=500
+                height=450
             )
             fig_map.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
@@ -748,7 +748,7 @@ def halaman_simulasi_lokal():
             color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
             map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.9,
             hover_name=KOL_KAB_KOTA, hover_data={"status_ketahanan": True},
-            height=600
+            height=550
         )
         fig_map_local.update_layout(
             legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
@@ -874,7 +874,7 @@ def halaman_spasial():
                 color="cluster_label", color_discrete_map=warna_cluster, map_style="carto-positron", zoom=zoom_val,
                 center=center_koor, opacity=0.9, hover_name=KOL_KAB_KOTA,
                 hover_data={TARGET_KAB: True, "cluster_label": False},
-                height=400
+                height=450
             )
             fig_lisa.update_layout(
                 legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title=""),
