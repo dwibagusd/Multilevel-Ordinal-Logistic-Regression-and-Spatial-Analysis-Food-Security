@@ -309,7 +309,7 @@ def halaman_peta_penuh():
                 color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=850 # Ditingkatkan dari 750px ke 850px untuk mengisi monitor standar
+                height=750 # Ditingkatkan dari 750px ke 850px untuk mengisi monitor standar
             )
         else:
             is_inv = False
