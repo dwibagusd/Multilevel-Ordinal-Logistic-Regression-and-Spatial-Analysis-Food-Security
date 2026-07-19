@@ -168,7 +168,39 @@ def get_map_view(prov_list):
 # -----------------------------------------------------------------------------
 @st.cache_data
 def load_tabular_data(file_path):
-    return pd.read_csv(file_path)
+    # return pd.read_csv(file_path)
+    try:
+    df_clean = load_tabular_data(CSV_FILENAME)
+    w_spasial = load_spatial_weights(MATRIKS_FILENAME)
+    weights = load_pymc_weights("model_weights.json")
+    
+    if LEVEL2_VAR_KEY in df_clean.columns:
+        # 1. Buat variabel untuk Tampilan UI (Skala Triliun Rupiah)
+        if df_clean[LEVEL2_VAR_KEY].mean() > 1000:
+            # Simpan data asli sementara untuk log1p
+            bansos_raw = df_clean[LEVEL2_VAR_KEY].copy()
+            # Konversi untuk tampilan UI
+            df_clean[LEVEL2_VAR_KEY] = df_clean[LEVEL2_VAR_KEY] / 1_000_000_000_000
+        else:
+            # Jika dari CSV sudah skala Triliun, kembalikan ke nominal asli untuk model
+            bansos_raw = df_clean[LEVEL2_VAR_KEY] * 1_000_000_000_000
+            
+        # 2. Terapkan Standarisasi Proyek Asli (Unik per Provinsi -> Log1p)
+        # Buat dataframe sementara khusus untuk mencari nilai unik
+        df_temp = pd.DataFrame({KOL_PROVINSI: df_clean[KOL_PROVINSI], 'BANSOS_RAW': bansos_raw})
+        
+        # Ambil nilai unik per provinsi
+        bansos_unik_prov = df_temp.groupby(KOL_PROVINSI)['BANSOS_RAW'].first()
+        
+        # Transformasi log1p
+        bansos_log_prov = np.log1p(bansos_unik_prov)
+        
+        # Petakan kembali ke dataset utama dengan nama kolom baru khusus untuk Model
+        df_clean[f"{LEVEL2_VAR_KEY}_MODEL"] = df_clean[KOL_PROVINSI].map(bansos_log_prov)
+
+except FileNotFoundError as e:
+    st.error(f"⚠️ File tidak ditemukan: {e.filename}")
+    st.stop()
 
 
 @st.cache_data
@@ -218,7 +250,11 @@ def predict_ordinal_probs_pymc(df_input, w, df_asli):
     if std_z == 0: std_z = 1e-9
     
     nilai_z_bansos = (df_input[LEVEL2_VAR_KEY] - mean_z) / std_z
-    gamma_z = (nilai_z_bansos * w["gamma"]).values
+    bansos_sim_nominal = new_bansos * 1_000_000_000_000
+
+    # 2. Terapkan transformasi yang sama dengan proyek Anda
+    bansos_sim_log1p = np.log1p(bansos_sim_nominal)
+    gamma_z = (bansos_sim_log1p * w["gamma"]).values
     
     # 3. Menghitung Random Effects 
     u_prov = df_input[KOL_PROVINSI].map(w["u_provinsi"]).fillna(0.0).values
