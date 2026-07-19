@@ -298,13 +298,13 @@ def halaman_peta_penuh():
             label_visibility="collapsed"
         )
         
-    teks_keterangan = DESKRIPSI_INDIKATOR.get(
-        kolom_target, 
-        "Keterangan detail belum tersedia untuk indikator ini."
-    )
+        teks_keterangan = DESKRIPSI_INDIKATOR.get(
+            kolom_target, 
+            "Keterangan detail belum tersedia untuk indikator ini."
+        )
     
     # Menampilkannya dengan gaya notifikasi yang rapi sebelum peta
-    st.info(f"💡 **Informasi Indikator:** {teks_keterangan}")
+    st.info(f"{teks_keterangan}")
     # --- AKHIR BAGIAN MODIFIKASI ---
         
     if filter_prov:
