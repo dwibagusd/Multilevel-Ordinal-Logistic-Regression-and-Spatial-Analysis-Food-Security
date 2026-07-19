@@ -363,7 +363,7 @@ def halaman_bayesian():
         # Rentang diperlebar dari -10.0 hingga 10.0 Triliun, dengan step 0.5 (500 Miliar)
         sim_bansos = st.slider(
             f"Penyesuaian {LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})", 
-            -10000.0, 1000.0, 0.0, 
+            -10000000000.0, 10000000000.0, 0.0, 
             key=f"sim_{LEVEL2_VAR_KEY}", 
             step=0.5
         )
