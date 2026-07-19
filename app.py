@@ -147,6 +147,23 @@ def get_map_view(prov_list):
     zoom = KOORDINAT_PROVINSI.get(prov_key, {}).get("zoom", 5.5)
     return {"lat": lat, "lon": lon}, zoom
 
+# =============================================================================
+# KONFIGURASI KETERANGAN INDIKATOR UNTUK UI
+# =============================================================================
+DESKRIPSI_INDIKATOR = {
+    "status_ketahanan": "Prediksi status ketahanan pangan wilayah. Prediksi ini menggunakan model Bayesian Multilevel Ordinal Logistic Regression yang telah dilatih dengan data historis.",
+    TARGET_KAB: f"Nilai Indeks Aktual ({TARGET_KAB}) berdasarkan data observasi asli sebelum dikenakan intervensi simulasi.",
+    LEVEL2_VAR_KEY: f"{LEVEL2_VAR_LABEL} merupakan alokasi anggaran bantuan sosial dari tingkat provinsi. Variabel ini bertindak sebagai intervensi level-2 dalam model multilevel.",
+}
+
+# Membuat deskripsi default untuk variabel Level 1 berdasarkan konfigurasi yang sudah ada
+for key, cfg in LEVEL1_VARS.items():
+    DESKRIPSI_INDIKATOR[key] = f"{cfg['label']} merupakan salah satu indikator pembentuk ketahanan pangan. Nilai diukur dalam satuan {cfg['unit']}."
+    
+# Anda bisa menimpa deskripsi default di atas dengan definisi spesifik. Contoh:
+DESKRIPSI_INDIKATOR["ENERGI"] = "Ketersediaan Energi mengukur total pasokan kalori yang dapat diakses oleh penduduk di suatu wilayah, dihitung dalam Kkal/Kapita/Hari."
+DESKRIPSI_INDIKATOR["MISKIN"] = "Tingkat Kemiskinan mengukur persentase penduduk yang berada di bawah garis kemiskinan. Variabel ini berbanding terbalik (inverse) dengan ketahanan pangan."
+
 # -----------------------------------------------------------------------------
 # 2. LOAD DATA (CACHE)
 # -----------------------------------------------------------------------------
@@ -267,7 +284,7 @@ def halaman_peta_penuh():
     col_kiri, col_kanan = st.columns(2)
     with col_kiri:
         pilihan_label = st.selectbox(
-            "Pilih Indikator:", 
+            "Pilih Indikator Peta:", 
             options=list(opsi_indikator.keys()),
             label_visibility="collapsed" 
         )
@@ -280,6 +297,15 @@ def halaman_peta_penuh():
             placeholder="Tampilkan Seluruh Indonesia",
             label_visibility="collapsed"
         )
+        
+    teks_keterangan = DESKRIPSI_INDIKATOR.get(
+        kolom_target, 
+        "Keterangan detail belum tersedia untuk indikator ini."
+    )
+    
+    # Menampilkannya dengan gaya notifikasi yang rapi sebelum peta
+    st.info(f"💡 **Informasi Indikator:** {teks_keterangan}")
+    # --- AKHIR BAGIAN MODIFIKASI ---
         
     if filter_prov:
         df_map = df_map[df_map[KOL_PROVINSI].isin(filter_prov)]
