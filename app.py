@@ -54,52 +54,37 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # URL GeoJSON & Nama File CSV
-# URL_GEOJSON = "https://raw.githubusercontent.com/dwibagusd/Multilevel-Ordinal-Logistic-Regression-and-Spatial-Analysis-Food-Security/refs/heads/main/Data/peta_indonesia_comp.json"
 URL_GEOJSON = "https://raw.githubusercontent.com/dwibagusd/Multilevel-Ordinal-Logistic-Regression-and-Spatial-Analysis-Food-Security/refs/heads/main/Data/peta_indonesia_terbaru.json"
 CSV_FILENAME = "data_ringan.csv"
 MATRIKS_FILENAME = "matriks_bobot_penuh.csv"
 
 # =============================================================================
-# KONFIGURASI VARIABEL PREDIKTOR (SUMBER TUNGGAL / SINGLE SOURCE OF TRUTH)
+# KONFIGURASI VARIABEL PREDIKTOR
 # =============================================================================
-# Sesuai KOLOM_PREDIKTOR pada model terbaru. Level 1 = kabupaten/kota,
-# Level 2 = provinsi (BANSOS).
-#
-# PENTING - MOHON DIKONFIRMASI:
-# Label, unit, dan arah (is_inverse) untuk NCPR, MISKIN, RLSP, TNPAIR,
-# TNPLISTRIK, NAKES, AHH, dan STUNTING saya bawa dari versi dashboard
-# sebelumnya (sudah konsisten dengan Bab 2-4 skripsi Anda).
-# Untuk ENERGI, PROHE, CBPK, CVHARGA, POU, AMANPANGN, dan PPH saya
-# menuliskan TEBAKAN TERBAIK berdasarkan istilah ketahanan pangan yang umum
-# (mis. POU = Prevalence of Undernourishment, PPH = skor Pola Pangan
-# Harapan, CVHARGA = koefisien variasi harga pangan). Silakan sunting
-# langsung dictionary LEVEL1_VARS di bawah ini (kolom "label", "unit",
-# "is_inverse") agar sesuai definisi variabel yang sebenarnya Anda pakai.
-# clip: "pct" -> dibatasi 0-100, "years" -> dibatasi 0-18, "min0" -> dibatasi >= 0
 LEVEL1_VARS = {
     "NCPR":       {"label": "NCPR",                          "unit": "Pangan/Kapita",       "is_inverse": False, "clip": "min0"},
-    "ENERGI":     {"label": "Ketersediaan Energi",            "unit": "Kkal/Kapita/Hari",    "is_inverse": False, "clip": "min0"},   # TODO: konfirmasi
-    "PROHE":      {"label": "PROHE",                          "unit": "Nilai",               "is_inverse": False, "clip": "min0"},   # TODO: konfirmasi definisi
-    "CBPK":       {"label": "CBPK",                           "unit": "Nilai",               "is_inverse": False, "clip": "min0"},   # TODO: konfirmasi definisi
+    "ENERGI":     {"label": "Ketersediaan Energi",            "unit": "Kkal/Kapita/Hari",    "is_inverse": False, "clip": "min0"},  
+    "PROHE":      {"label": "PROHE",                          "unit": "Nilai",               "is_inverse": False, "clip": "min0"},  
+    "CBPK":       {"label": "CBPK",                           "unit": "Nilai",               "is_inverse": False, "clip": "min0"},  
     "MISKIN":     {"label": "Kemiskinan",                     "unit": "% Penduduk",          "is_inverse": True,  "clip": "pct"},
-    "CVHARGA":    {"label": "Volatilitas Harga (CV)",         "unit": "% Koef. Variasi",     "is_inverse": True,  "clip": "min0"},   # TODO: konfirmasi
-    "POU":        {"label": "Prevalence of Undernourishment", "unit": "% Penduduk",          "is_inverse": True,  "clip": "pct"},    # TODO: konfirmasi
+    "CVHARGA":    {"label": "Volatilitas Harga (CV)",         "unit": "% Koef. Variasi",     "is_inverse": True,  "clip": "min0"},  
+    "POU":        {"label": "Prevalence of Undernourishment", "unit": "% Penduduk",          "is_inverse": True,  "clip": "pct"},   
     "RLSP":       {"label": "Lama Sekolah Perempuan",         "unit": "Rata-rata Tahun",     "is_inverse": False, "clip": "years"},
-    "TNPAIR":     {"label": "Tanpa Air Bersih",                "unit": "% Rumah Tangga",     "is_inverse": True,  "clip": "pct"},
+    "TNPAIR":     {"label": "Tanpa Air Bersih",               "unit": "% Rumah Tangga",      "is_inverse": True,  "clip": "pct"},
     "TNPLISTRIK": {"label": "Tanpa Listrik",                  "unit": "% Rumah Tangga",      "is_inverse": True,  "clip": "pct"},
     "NAKES":      {"label": "Tenaga Kesehatan",               "unit": "Rasio Perkapita",     "is_inverse": False, "clip": "min0"},
     "AHH":        {"label": "Harapan Hidup",                  "unit": "Usia (Tahun)",        "is_inverse": False, "clip": "pct", "slider_range": (-10, 10)},
-    "AMANPANGN":  {"label": "Keamanan Pangan",                "unit": "% Wilayah/RT",        "is_inverse": False, "clip": "pct"},    # TODO: konfirmasi
-    "PPH":        {"label": "Pola Pangan Harapan (PPH)",      "unit": "Skor (0-100)",        "is_inverse": False, "clip": "pct"},    # TODO: konfirmasi
+    "AMANPANGN":  {"label": "Keamanan Pangan",                "unit": "% Wilayah/RT",        "is_inverse": False, "clip": "pct"},   
+    "PPH":        {"label": "Pola Pangan Harapan (PPH)",      "unit": "Skor (0-100)",        "is_inverse": False, "clip": "pct"},   
     "STUNTING":   {"label": "Stunting",                       "unit": "% Balita",            "is_inverse": True,  "clip": "pct"},
 }
 LEVEL2_VAR_KEY = "BANSOS"
 LEVEL2_VAR_LABEL = "Anggaran Bansos"
 LEVEL2_VAR_UNIT = "Triliun Rupiah"
 
-TARGET_KAB = "IKP"          # variabel respons/komposit tingkat kab/kota untuk Moran's I
-KOL_KAB_KOTA = "Kabupaten/Kota"    # id wilayah kab/kota pada data_ringan.csv (sesuaikan bila berbeda)
-KOL_PROVINSI = "Provinsi"    # id provinsi pada data_ringan.csv (sesuaikan bila berbeda)
+TARGET_KAB = "IKP"         
+KOL_KAB_KOTA = "Kabupaten/Kota"    
+KOL_PROVINSI = "Provinsi"    
 
 
 def apply_clip(series, clip_type):
@@ -108,7 +93,7 @@ def apply_clip(series, clip_type):
         return series.clip(0, 100)
     if clip_type == "years":
         return series.clip(0, 18)
-    return series.clip(lower=0)  # "min0"
+    return series.clip(lower=0) 
 
 
 KOORDINAT_PROVINSI = {
@@ -152,10 +137,9 @@ KOORDINAT_PROVINSI = {
     "papua barat daya": {"lat": -1.3361, "lon": 132.0, "zoom": 6}
 }
 
-
 def get_map_view(prov_list):
     if not prov_list or len(prov_list) != 1:
-        return {"lat": -2.5, "lon": 118}, 4.2  # Default View Indonesia
+        return {"lat": -2.5, "lon": 118}, 4.2 
 
     prov_key = prov_list[0].lower().strip()
     lat = KOORDINAT_PROVINSI.get(prov_key, {}).get("lat", -2.5)
@@ -168,61 +152,40 @@ def get_map_view(prov_list):
 # -----------------------------------------------------------------------------
 @st.cache_data
 def load_tabular_data(file_path):
-    # return pd.read_csv(file_path)
-    try:
-        df_clean = load_tabular_data(CSV_FILENAME)
-        w_spasial = load_spatial_weights(MATRIKS_FILENAME)
-        weights = load_pymc_weights("model_weights.json")
+    # PERBAIKAN: Gunakan pd.read_csv langsung. Pemanggilan rekursif dihapus.
+    df = pd.read_csv(file_path)
+    
+    if LEVEL2_VAR_KEY in df.columns:
+        # 1. Buat variabel untuk Tampilan UI (Skala Triliun Rupiah)
+        if df[LEVEL2_VAR_KEY].mean() > 1000:
+            bansos_raw = df[LEVEL2_VAR_KEY].copy()
+            df[LEVEL2_VAR_KEY] = df[LEVEL2_VAR_KEY] / 1_000_000_000_000
+        else:
+            bansos_raw = df[LEVEL2_VAR_KEY] * 1_000_000_000_000
+            
+        # 2. Terapkan Standarisasi Proyek Asli (Unik per Provinsi -> Log1p)
+        df_temp = pd.DataFrame({KOL_PROVINSI: df[KOL_PROVINSI], 'BANSOS_RAW': bansos_raw})
+        bansos_unik_prov = df_temp.groupby(KOL_PROVINSI)['BANSOS_RAW'].first()
+        bansos_log_prov = np.log1p(bansos_unik_prov)
         
-        if LEVEL2_VAR_KEY in df_clean.columns:
-            # 1. Buat variabel untuk Tampilan UI (Skala Triliun Rupiah)
-            if df_clean[LEVEL2_VAR_KEY].mean() > 1000:
-                # Simpan data asli sementara untuk log1p
-                bansos_raw = df_clean[LEVEL2_VAR_KEY].copy()
-                # Konversi untuk tampilan UI
-                df_clean[LEVEL2_VAR_KEY] = df_clean[LEVEL2_VAR_KEY] / 1_000_000_000_000
-            else:
-                # Jika dari CSV sudah skala Triliun, kembalikan ke nominal asli untuk model
-                bansos_raw = df_clean[LEVEL2_VAR_KEY] * 1_000_000_000_000
-                
-            # 2. Terapkan Standarisasi Proyek Asli (Unik per Provinsi -> Log1p)
-            # Buat dataframe sementara khusus untuk mencari nilai unik
-            df_temp = pd.DataFrame({KOL_PROVINSI: df_clean[KOL_PROVINSI], 'BANSOS_RAW': bansos_raw})
-            
-            # Ambil nilai unik per provinsi
-            bansos_unik_prov = df_temp.groupby(KOL_PROVINSI)['BANSOS_RAW'].first()
-            
-            # Transformasi log1p
-            bansos_log_prov = np.log1p(bansos_unik_prov)
-            
-            # Petakan kembali ke dataset utama dengan nama kolom baru khusus untuk Model
-            df_clean[f"{LEVEL2_VAR_KEY}_MODEL"] = df_clean[KOL_PROVINSI].map(bansos_log_prov)
+        # Simpan dalam kolom khusus model
+        df[f"{LEVEL2_VAR_KEY}_MODEL"] = df[KOL_PROVINSI].map(bansos_log_prov)
 
-    except FileNotFoundError as e:
-        st.error(f"⚠️ File tidak ditemukan: {e.filename}")
-        st.stop()
-
+    return df
 
 @st.cache_data
 def load_spatial_weights(file_path):
-    # Matriks yang disimpan pada matriks_bobot_penuh.csv diasumsikan berupa
-    # W_sym: matriks Queen contiguity biner (0/1) & simetris, hasil dari
-    # proses penyusunan bobot spasial untuk model CAR (lihat catatan di
-    # notebook pemodelan). Untuk kebutuhan Moran's I pada dashboard ini,
-    # matriks tersebut di-row-standardize (transform='r') sesuai pendekatan:
-    #   w = lps.weights.Queen.from_dataframe(final_data); w.transform = 'r'
     df_matriks = pd.read_csv(file_path, index_col=0)
     w = lps.weights.full2W(df_matriks.values, ids=df_matriks.index.tolist())
     w.transform = 'r'
     return w
-
 
 @st.cache_data
 def load_pymc_weights(json_path):
     with open(json_path, "r") as f:
         return json.load(f)
 
-
+# Pemuatan awal dataset ke memori
 try:
     df_clean = load_tabular_data(CSV_FILENAME)
     w_spasial = load_spatial_weights(MATRIKS_FILENAME)
@@ -232,34 +195,29 @@ except FileNotFoundError as e:
     st.stop()
 
 
-# Menyiapkan fungsi prediksi PyMC yang akan dipakai di seluruh halaman
+# -----------------------------------------------------------------------------
+# FUNGSI PREDIKSI PYMC
+# -----------------------------------------------------------------------------
 def predict_ordinal_probs_pymc(df_input, w, df_asli):
     eta = np.zeros(len(df_input))
-    # 1. Menghitung X * Beta
+    
+    # 1. Menghitung X * Beta (Z-score untuk variabel Level 1)
     for col, coef in w["beta"].items():
         if col in df_input.columns:
             mean_val = df_asli[col].mean()
             std_val = df_asli[col].std()
             if std_val == 0: std_val = 1e-9
             nilai_z = (df_input[col] - mean_val) / std_val
-            eta += (nilai_z * coef).values # Kalkulasi langsung ke seluruh baris
+            eta += (nilai_z * coef).values 
             
     # 2. Menghitung Z * Gamma (Bansos)
-    mean_z = df_asli[LEVEL2_VAR_KEY].mean()
-    std_z = df_asli[LEVEL2_VAR_KEY].std()
-    if std_z == 0: std_z = 1e-9
-    
-    nilai_z_bansos = (df_input[LEVEL2_VAR_KEY] - mean_z) / std_z
-    bansos_sim_nominal = new_bansos * 1_000_000_000_000
-
-    # 2. Terapkan transformasi yang sama dengan proyek Anda
-    bansos_sim_log1p = np.log1p(bansos_sim_nominal)
-    gamma_z = (bansos_sim_log1p * w["gamma"]).values
+    # PERBAIKAN: Membaca langsung kolom log1p, sehingga tidak perlu kalkulasi Z-score
+    # atau mencari variabel lokal 'new_bansos' yang berada di luar scope.
+    gamma_z = (df_input[f"{LEVEL2_VAR_KEY}_MODEL"] * w["gamma"]).values
     
     # 3. Menghitung Random Effects 
     u_prov = df_input[KOL_PROVINSI].map(w["u_provinsi"]).fillna(0.0).values
     
-    # [BUG FIX]: Menggunakan "phi_kabupaten" sesuai isi file JSON asli
     kunci_phi = "phi_kabupaten" if "phi_kabupaten" in w else "phi_kabkota"
     phi_kab = df_input[KOL_KAB_KOTA].map(w[kunci_phi]).fillna(0.0).values
     
@@ -280,7 +238,7 @@ def reset_simulasi():
     for key in LEVEL1_VARS:
         st.session_state[f"sim_{key}"] = 0
     st.session_state[f"sim_{LEVEL2_VAR_KEY}"] = 0.0
-    st.toast("Simulasi berhasil direset ke nilai awal!") # Feedback UI
+    st.toast("Simulasi berhasil direset ke nilai awal!")
 
 if f"sim_{LEVEL2_VAR_KEY}" not in st.session_state:
     st.session_state[f"sim_{LEVEL2_VAR_KEY}"] = 0.0
@@ -290,15 +248,14 @@ for key in LEVEL1_VARS:
 
 status_map = {0: "Rentan", 1: "Tahan", 2: "Sangat Tahan"}
 
-
+# -----------------------------------------------------------------------------
+# 3. FUNGSI HALAMAN 0: PETA PENUH
+# -----------------------------------------------------------------------------
 def halaman_peta_penuh():
-    # 1. HACK CSS: Memaksa Streamlit menggunakan 100% lebar layar dan menghilangkan padding
-    # 2. Menghitung prediksi dasar (aktual) untuk dimasukkan ke data peta
     pred_base = predict_ordinal_probs_pymc(df_clean, weights, df_clean)
     df_map = df_clean.copy()
     df_map["status_ketahanan"] = pd.Series(pred_base).map(status_map)
     
-    # 3. Membangun Dictionary untuk Opsi Filter
     opsi_indikator = {
         "Prediksi Model (Status Ketahanan)": "status_ketahanan",
         f"Indeks Aktual ({TARGET_KAB})": TARGET_KAB
@@ -307,13 +264,12 @@ def halaman_peta_penuh():
         opsi_indikator[f"{cfg['label']} ({cfg['unit']})"] = key
     opsi_indikator[f"{LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})"] = LEVEL2_VAR_KEY
     
-    # 4. Menempatkan Filter di Atas Peta
     col_kiri, col_kanan = st.columns(2)
     with col_kiri:
         pilihan_label = st.selectbox(
             "Pilih Indikator:", 
             options=list(opsi_indikator.keys()),
-            label_visibility="collapsed" # Menyembunyikan label agar lebih hemat ruang vertikal
+            label_visibility="collapsed" 
         )
         kolom_target = opsi_indikator[pilihan_label]
         
@@ -325,7 +281,6 @@ def halaman_peta_penuh():
             label_visibility="collapsed"
         )
         
-    # Terapkan filter baris data jika provinsi dipilih
     if filter_prov:
         df_map = df_map[df_map[KOL_PROVINSI].isin(filter_prov)]
         
@@ -333,10 +288,8 @@ def halaman_peta_penuh():
         st.warning("Peringatan: Data tidak tersedia untuk wilayah yang dipilih.")
         return
         
-    # Menyesuaikan titik tengah dan zoom kamera
     center_koor, zoom_val = get_map_view(filter_prov) if filter_prov else ({"lat": -2.5, "lon": 118}, 4.8)
     
-    # 5. Rendering Peta Skala Penuh
     with st.spinner("Memuat visualisasi layar penuh..."):
         if kolom_target == "status_ketahanan":
             fig = px.choropleth_map(
@@ -345,7 +298,7 @@ def halaman_peta_penuh():
                 color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=750 # Ditingkatkan dari 750px ke 850px untuk mengisi monitor standar
+                height=850 
             )
         else:
             is_inv = False
@@ -360,24 +313,17 @@ def halaman_peta_penuh():
                 color_continuous_scale=colorscale,
                 map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI],
-                height=850 # Ditingkatkan ke 850px
+                height=850 
             )
             
         fig.update_layout(
             margin={"r": 0, "t": 0, "l": 0, "b": 0},
             paper_bgcolor="rgba(0,0,0,0)",
             legend=dict(
-                orientation="h", 
-                yanchor="bottom", 
-                y=1.01, 
-                xanchor="center", 
-                x=0.5, 
-                title="",
-                bgcolor="rgba(255, 255, 255, 0.7)" # Menambahkan background tipis pada legenda agar terbaca jika overlap dengan peta
+                orientation="h", yanchor="bottom", y=1.01, xanchor="center", x=0.5, title="",
+                bgcolor="rgba(255, 255, 255, 0.7)" 
             )
         )
-        
-        # use_container_width=True memastikan grafik meregang menyamping ke batas 100% yang sudah dimodifikasi CSS
         st.plotly_chart(fig, use_container_width=True)
 
 # -----------------------------------------------------------------------------
@@ -396,20 +342,23 @@ def halaman_bayesian():
             st.slider(f"{cfg['label']} (%)", lo, hi, 0, key=f"sim_{key}", step=step)
 
     with st.sidebar.expander("Level Provinsi", expanded=True):
-        # Rentang diperlebar dari -10.0 hingga 10.0 Triliun, dengan step 0.5 (500 Miliar)
         sim_bansos = st.slider(
             f"Penyesuaian {LEVEL2_VAR_LABEL} ({LEVEL2_VAR_UNIT})", 
-            -10000000000.0, 10000000000.0, 0.0, 
+            -10.0, 10.0, 0.0, 
             key=f"sim_{LEVEL2_VAR_KEY}", 
             step=0.5
         )
 
-    # Menerapkan rumus perubahan interaktif dengan perlindungan batas (clipping)
+    # Menerapkan rumus perubahan interaktif
     df_sim = df_clean.copy()
     for key, cfg in LEVEL1_VARS.items():
         pct = st.session_state[f"sim_{key}"]
         df_sim[key] = apply_clip(df_clean[key] * (1 + pct / 100), cfg["clip"])
+        
     df_sim[LEVEL2_VAR_KEY] = df_clean[LEVEL2_VAR_KEY] + sim_bansos
+    
+    # PERBAIKAN: Perbarui juga kolom _MODEL secara dinamis saat slider digeser
+    df_sim[f"{LEVEL2_VAR_KEY}_MODEL"] = np.log1p(df_sim[LEVEL2_VAR_KEY] * 1_000_000_000_000)
 
     st.sidebar.button("Reset", on_click=reset_simulasi, width='stretch')
 
@@ -428,10 +377,9 @@ def halaman_bayesian():
         val_sim = df_sim[var_name].mean()
         delta = val_sim - val_awal
 
-        # 1. Kustomisasi format teks khusus untuk variabel BANSOS
         if var_name == LEVEL2_VAR_KEY:
-            formatted_val = f"{val_sim:.2f}" # Menambahkan teks langsung pada nilai
-            delta_str = f"{abs(delta):.2f} Triliun"         # Mengubah 'Poin' menjadi unit relevan
+            formatted_val = f"{val_sim:.2f} Triliun Rupiah" 
+            delta_str = f"{abs(delta):.2f} Triliun"         
         else:
             formatted_val = f"{val_sim:.2f}"
             if is_absolute:
@@ -440,7 +388,6 @@ def halaman_bayesian():
                 pct_change = (delta / val_awal) * 100 if val_awal != 0 else 0
                 delta_str = f"{abs(pct_change):.1f}%"
 
-        # 2. Penentuan arah panah dan warna
         if delta > 0.001:
             arrow = "↑"
             delta_class = "delta-negative" if is_inverse else "delta-positive"
@@ -455,7 +402,6 @@ def halaman_bayesian():
             else:
                 delta_str = "0.0%" if not is_absolute else "0.00 Poin"
 
-        # 3. Konstruksi HTML
         html_content = f"""
         <div class="metric-card">
             <div class="metric-title">{label}</div>
@@ -469,7 +415,6 @@ def halaman_bayesian():
     col_kiri, col_kanan = st.columns([3, 7])
 
     with col_kiri:
-        # 3 sub-kolom karena jumlah variabel sekarang lebih banyak (15 + BANSOS)
         sub_c1, sub_c2, sub_c3 = st.columns(3)
         sub_cols = [sub_c1, sub_c2, sub_c3]
 
@@ -491,7 +436,7 @@ def halaman_bayesian():
             fig_map = px.choropleth_map(
                 df_filtered_bayes, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
                 color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-                map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.8,
+                map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.8,
                 hover_name=KOL_KAB_KOTA, hover_data=[KOL_PROVINSI, "MISKIN"] if "MISKIN" in df_filtered_bayes.columns else [KOL_PROVINSI],
                 height=530
             )
@@ -507,6 +452,7 @@ def halaman_bayesian():
         tahan_sim = (pred_sim == 2).sum()
         total_wilayah = len(df_clean)
 
+        st.markdown("---")
         if rentan_sim < rentan_awal:
             pesan_rentan = f"📉 Berhasil **mengentaskan {rentan_awal - rentan_sim} daerah** dari zona Rentan."
             st.success(pesan_rentan)
@@ -516,7 +462,7 @@ def halaman_bayesian():
         else:
             pesan_rentan = "➖ Tidak ada perubahan jumlah wilayah pada zona Rentan (Kondisi Stagnan)."
             st.info(pesan_rentan)
-        st.info(f"💡 **Dampak Kebijakan Nasional:**\n* {pesan_rentan}\n* Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.")
+        st.info(f"💡 **Dampak Kebijakan Nasional:** Proporsi wilayah berstatus **'Sangat Tahan'** berubah dari **{(tahan_awal/total_wilayah)*100:.1f}%** menjadi **{(tahan_sim/total_wilayah)*100:.1f}%**.")
 
 
 # -----------------------------------------------------------------------------
@@ -536,12 +482,15 @@ def halaman_simulasi_provinsi():
         new_bansos = st.number_input(
             f"Alokasi Baru ({LEVEL2_VAR_UNIT})",
             value=float(nilai_awal_bansos),
-            step=0.5 # Loncatan per 500 Miliar Rupiah
+            step=0.5 
         )
         submit_prov = st.form_submit_button("Jalankan Simulasi", use_container_width=True)
 
     df_sim_prov = df_base.copy()
     df_sim_prov.loc[df_sim_prov[KOL_PROVINSI] == prov_terpilih, LEVEL2_VAR_KEY] = new_bansos
+    
+    # PERBAIKAN: Perbarui kolom _MODEL untuk kalkulasi log1p dari input baru
+    df_sim_prov[f"{LEVEL2_VAR_KEY}_MODEL"] = np.log1p(df_sim_prov[LEVEL2_VAR_KEY] * 1_000_000_000_000)
 
     pred_sim_prov = predict_ordinal_probs_pymc(df_sim_prov, weights, df_clean)
     df_sim_prov["status_baru"] = pd.Series(pred_sim_prov).map(status_map)
@@ -595,13 +544,14 @@ def halaman_simulasi_provinsi():
         st.markdown(f"**Anggaran Bansos:**\n* Awal: `{nilai_awal_bansos:.2f} Triliun Rupiah`\n* Baru: `{new_bansos:.2f} Triliun Rupiah`")
         if new_bansos != nilai_awal_bansos:
             st.success("Cek tabel di bawah untuk melihat rincian Kab/Kota yang terdampak.")
+            
     with col_kanan:
         center_koor, zoom_val = get_map_view([prov_terpilih])
 
         fig_map_prov = px.choropleth_map(
             df_prov_only, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
             color="status_baru", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-            map_style="basic", zoom=zoom_val, center=center_koor, opacity=0.9,
+            map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.9,
             hover_name=KOL_KAB_KOTA, hover_data={"status_baru": True}, height=450
         )
         fig_map_prov.update_layout(
@@ -626,8 +576,6 @@ def halaman_simulasi_lokal():
     df_base = df_clean.copy()
     df_base["status_ketahanan"] = pd.Series(pred_awal_global).map(status_map)
 
-    # Dictionary variabel lokal dibangun otomatis dari LEVEL1_VARS (BANSOS tidak
-    # termasuk karena itu variabel Level 2 / provinsi)
     dict_variabel_lokal = {key: (cfg["label"], cfg["unit"]) for key, cfg in LEVEL1_VARS.items()}
 
     st.sidebar.markdown("### Simulasi What-if")
@@ -727,7 +675,7 @@ def halaman_simulasi_lokal():
         fig_map_local = px.choropleth_map(
             df_map_local, geojson=URL_GEOJSON, locations=KOL_KAB_KOTA, featureidkey="properties.kab_kota",
             color="status_ketahanan", color_discrete_map={"Rentan": "#ef4444", "Tahan": "#fde047", "Sangat Tahan": "#22c55e"},
-            map_style="light", zoom=zoom_val, center=center_koor, opacity=0.9,
+            map_style="carto-positron", zoom=zoom_val, center=center_koor, opacity=0.9,
             hover_name=KOL_KAB_KOTA, hover_data={"status_ketahanan": True},
             height=530
         )
@@ -757,8 +705,6 @@ def halaman_spasial():
         st.error(f"Variabel '{TARGET_KAB}' tidak ditemukan di dataset.")
         st.stop()
 
-    # 1. PERBAIKAN ALIGNMENT: Menyamakan urutan baris df_spasial dengan matriks bobot
-    # Menggunakan index dari KAB_KOTA untuk dicocokkan dengan w_spasial.id_order
     try:
         df_spasial = df_spasial.set_index(KOL_KAB_KOTA)
         df_spasial = df_spasial.loc[w_spasial.id_order].reset_index()
@@ -766,16 +712,13 @@ def halaman_spasial():
         st.error(f"Gagal mencocokkan urutan data spasial. Pastikan nama wilayah di CSV sama dengan Matriks Spasial: {e}")
         st.stop()
 
-    # 2. Kalkulasi Moran
     y_spasial = df_spasial[TARGET_KAB].values
     moran = Moran(y_spasial, w_spasial)
     moran_loc = Moran_Local(y_spasial, w_spasial)
     
-    # 3. PERBAIKAN METODE: Gunakan pendekatan Normalitas (Sama seperti file proyek)
     z_val = getattr(moran, "z_norm", None)
     p_val = getattr(moran, "p_norm", None)
     
-    # Fallback jika versi PySAL tidak mendukung z_norm secara default
     if z_val is None: z_val = moran.z_sim
     if p_val is None: p_val = moran.p_sim
 
