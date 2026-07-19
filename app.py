@@ -28,11 +28,11 @@ st.markdown("""
     /* 2. Menyesuaikan Font dan Elemen */
     html, body, p, li, label, .streamlit-expanderHeader, .stMarkdown { font-size: 0.9rem !important; }
 
-    /* 3. Efek dan Styling Metric Card - UKURAN MAKSIMAL DIPERKECIL */
+    /* 3. Efek dan Styling Metric Card - UKURAN DIPERKECIL UNTUK ALIGNMENT */
     .metric-card {
-        background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px;
-        padding: 6px 10px; /* Padding diperkecil untuk menghemat ruang vertikal */
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 6px; /* Margin bawah dipersempit */
+        background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px;
+        padding: 8px; /* Jarak dalam diperkecil dari 12px */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 8px; /* Jarak antar kartu diperkecil dari 12px */
         font-family: 'Inter', sans-serif;
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
@@ -42,22 +42,21 @@ st.markdown("""
     }
     .metric-title { 
         color: #4b5563; 
-        font-size: 0.6rem; /* Font judul diperkecil */
+        font-size: 0.65rem; /* Diperkecil dari 0.75rem */
         font-weight: 600; 
-        margin-bottom: 1px; 
+        margin-bottom: 2px; 
         line-height: 1.1; 
         text-transform: uppercase; 
         letter-spacing: 0.02em;
+        /* Membatasi judul maksimal 2 baris agar tinggi seragam */
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
-    .metric-unit { color: #9ca3af; font-size: 0.5rem; margin-bottom: 4px; line-height: 1; }
-    
-    /* Properti nilai dan delta dimodifikasi agar kompatibel dengan Flexbox */
-    .metric-value { font-size: 0.95rem; font-weight: 700; color: #111827; margin-bottom: 0; line-height: 1; }
-    .metric-delta { font-size: 0.6rem; font-weight: 600; padding: 2px 6px; border-radius: 12px; display: inline-block; white-space: nowrap;}
+    .metric-unit { color: #9ca3af; font-size: 0.55rem; margin-bottom: 4px; line-height: 1; } /* Font dan jarak bawah diperkecil */
+    .metric-value { font-size: 1.1rem; font-weight: 700; color: #111827; margin-bottom: 4px; line-height: 1; } /* Diperkecil dari 1.45rem */
+    .metric-delta { font-size: 0.65rem; font-weight: 600; padding: 2px 6px; border-radius: 12px; display: inline-block; }
 
     .delta-positive { background-color: #dcfce7; color: #166534; }
     .delta-negative { background-color: #fee2e2; color: #991b1b; }
@@ -416,7 +415,7 @@ def halaman_bayesian():
         delta = val_sim - val_awal
 
         if var_name == LEVEL2_VAR_KEY:
-            formatted_val = f"{val_sim:.2f} Triliun Rupiah" 
+            formatted_val = f"{val_sim:.2f}" 
             delta_str = f"{abs(delta):.2f} Triliun"         
         else:
             formatted_val = f"{val_sim:.2f}"
