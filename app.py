@@ -170,33 +170,33 @@ def get_map_view(prov_list):
 def load_tabular_data(file_path):
     # return pd.read_csv(file_path)
     try:
-    df_clean = load_tabular_data(CSV_FILENAME)
-    w_spasial = load_spatial_weights(MATRIKS_FILENAME)
-    weights = load_pymc_weights("model_weights.json")
-    
-    if LEVEL2_VAR_KEY in df_clean.columns:
-        # 1. Buat variabel untuk Tampilan UI (Skala Triliun Rupiah)
-        if df_clean[LEVEL2_VAR_KEY].mean() > 1000:
-            # Simpan data asli sementara untuk log1p
-            bansos_raw = df_clean[LEVEL2_VAR_KEY].copy()
-            # Konversi untuk tampilan UI
-            df_clean[LEVEL2_VAR_KEY] = df_clean[LEVEL2_VAR_KEY] / 1_000_000_000_000
-        else:
-            # Jika dari CSV sudah skala Triliun, kembalikan ke nominal asli untuk model
-            bansos_raw = df_clean[LEVEL2_VAR_KEY] * 1_000_000_000_000
+        df_clean = load_tabular_data(CSV_FILENAME)
+        w_spasial = load_spatial_weights(MATRIKS_FILENAME)
+        weights = load_pymc_weights("model_weights.json")
+        
+        if LEVEL2_VAR_KEY in df_clean.columns:
+            # 1. Buat variabel untuk Tampilan UI (Skala Triliun Rupiah)
+            if df_clean[LEVEL2_VAR_KEY].mean() > 1000:
+                # Simpan data asli sementara untuk log1p
+                bansos_raw = df_clean[LEVEL2_VAR_KEY].copy()
+                # Konversi untuk tampilan UI
+                df_clean[LEVEL2_VAR_KEY] = df_clean[LEVEL2_VAR_KEY] / 1_000_000_000_000
+            else:
+                # Jika dari CSV sudah skala Triliun, kembalikan ke nominal asli untuk model
+                bansos_raw = df_clean[LEVEL2_VAR_KEY] * 1_000_000_000_000
+                
+            # 2. Terapkan Standarisasi Proyek Asli (Unik per Provinsi -> Log1p)
+            # Buat dataframe sementara khusus untuk mencari nilai unik
+            df_temp = pd.DataFrame({KOL_PROVINSI: df_clean[KOL_PROVINSI], 'BANSOS_RAW': bansos_raw})
             
-        # 2. Terapkan Standarisasi Proyek Asli (Unik per Provinsi -> Log1p)
-        # Buat dataframe sementara khusus untuk mencari nilai unik
-        df_temp = pd.DataFrame({KOL_PROVINSI: df_clean[KOL_PROVINSI], 'BANSOS_RAW': bansos_raw})
-        
-        # Ambil nilai unik per provinsi
-        bansos_unik_prov = df_temp.groupby(KOL_PROVINSI)['BANSOS_RAW'].first()
-        
-        # Transformasi log1p
-        bansos_log_prov = np.log1p(bansos_unik_prov)
-        
-        # Petakan kembali ke dataset utama dengan nama kolom baru khusus untuk Model
-        df_clean[f"{LEVEL2_VAR_KEY}_MODEL"] = df_clean[KOL_PROVINSI].map(bansos_log_prov)
+            # Ambil nilai unik per provinsi
+            bansos_unik_prov = df_temp.groupby(KOL_PROVINSI)['BANSOS_RAW'].first()
+            
+            # Transformasi log1p
+            bansos_log_prov = np.log1p(bansos_unik_prov)
+            
+            # Petakan kembali ke dataset utama dengan nama kolom baru khusus untuk Model
+            df_clean[f"{LEVEL2_VAR_KEY}_MODEL"] = df_clean[KOL_PROVINSI].map(bansos_log_prov)
 
 except FileNotFoundError as e:
     st.error(f"⚠️ File tidak ditemukan: {e.filename}")
