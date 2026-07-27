@@ -16,10 +16,39 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
-    /* FIX: selector sebelumnya salah, sekarang target header yang benar */
     header[data-testid="stHeader"] {
         visibility: hidden;
         height: 0px;
+    }
+
+    /* FIX: paksa tombol collapse tetap tampil meski parent-nya disembunyikan */
+    [data-testid="stSidebarCollapsedControl"] {
+        visibility: visible !important;
+        position: fixed !important;
+        top: 0.6rem;
+        left: 0.6rem;
+        z-index: 999999 !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] button {
+        visibility: visible !important;
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        color: #111827;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    [data-testid="stSidebarCollapsedControl"] button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    [data-testid="stSidebarCollapseButton"] button {
+        color: #f8fafc;
+    }
+    [data-testid="stSidebarCollapseButton"] button:hover {
+        background-color: rgba(255,255,255,0.1);
+        border-radius: 8px;
     }
 
     /* 1. Mengatur Kontainer Utama agar Lebar Penuh di SEMUA  */
@@ -64,29 +93,6 @@ st.markdown("""
     .delta-negative { background-color: #fee2e2; color: #991b1b; }
     .delta-neutral { background-color: #f3f4f6; color: #374151; }
     /* Menyesuaikan teks Sidebar */
-    [data-testid="stSidebar"] { color: #f8fafc; }
-
-    /* 4. TOMBOL SIDEBAR - saat sidebar tertutup (muncul di canvas putih) */
-    [data-testid="stSidebarCollapsedControl"] button {
-        background-color: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        color: #111827;
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-    [data-testid="stSidebarCollapsedControl"] button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    /* 5. TOMBOL SIDEBAR - saat sidebar terbuka (di dalam sidebar gelap) */
-    [data-testid="stSidebarCollapseButton"] button {
-        color: #f8fafc;
-    }
-    [data-testid="stSidebarCollapseButton"] button:hover {
-        background-color: rgba(255,255,255,0.1);
-        border-radius: 8px;
     }
 </style>
 """, unsafe_allow_html=True)
