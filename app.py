@@ -76,6 +76,7 @@ st.markdown("""
     .delta-negative { background-color: #fee2e2; color: #991b1b; }
     .delta-neutral { background-color: #f3f4f6; color: #374151; }
     /* Menyesuaikan teks Sidebar */
+    [data-testid="stSidebar"] { color: #f8fafc; }
     }
 </style>
 """, unsafe_allow_html=True)
