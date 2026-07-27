@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
-    header[data-testid="stHeader"] {
+    header[data-testid="stSidebarCollapsedControl"] {
         visibility: hidden;
         height: 0px;
     }
