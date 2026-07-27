@@ -16,39 +16,22 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
-    header[data-testid="stHeader"] {
+    /* Sembunyikan HANYA toolbar kanan (menu, GitHub, Share, Deploy) */
+    [data-testid="stToolbar"] {
         visibility: hidden;
-        height: 0px;
+    }
+    #MainMenu {
+        visibility: hidden;
+    }
+    footer {
+        visibility: hidden;
     }
 
-    /* FIX: paksa tombol collapse tetap tampil meski parent-nya disembunyikan */
-    [data-testid="stSidebarCollapsedControl"] {
-        visibility: visible !important;
-        position: fixed !important;
-        top: 0.6rem;
-        left: 0.6rem;
-        z-index: 999999 !important;
-    }
-    [data-testid="stSidebarCollapsedControl"] button {
-        visibility: visible !important;
-        background-color: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        color: #111827;
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-    [data-testid="stSidebarCollapsedControl"] button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    [data-testid="stSidebarCollapseButton"] button {
-        color: #f8fafc;
-    }
-    [data-testid="stSidebarCollapseButton"] button:hover {
-        background-color: rgba(255,255,255,0.1);
-        border-radius: 8px;
+    /* Header TIDAK disembunyikan (visibility/height) agar tombol toggle 
+       sidebar default (posisi & perilakunya) tetap utuh, hanya dibuat 
+       transparan supaya tidak ada bar putih/garis yang mengganggu */
+    header[data-testid="stHeader"] {
+        background: transparent;
     }
 
     /* 1. Mengatur Kontainer Utama agar Lebar Penuh di SEMUA  */
