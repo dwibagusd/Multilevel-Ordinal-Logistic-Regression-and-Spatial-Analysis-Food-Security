@@ -16,6 +16,9 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
+    header {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     /* 1. Mengatur Kontainer Utama agar Lebar Penuh di SEMUA  */
     .block-container {
         padding-top: 2rem !important;
