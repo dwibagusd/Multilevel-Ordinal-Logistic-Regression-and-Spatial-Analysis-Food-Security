@@ -17,9 +17,9 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 st.markdown("""
 <style>
     /* Sembunyikan HANYA toolbar kanan (menu, GitHub, Share, Deploy) */
-    # [data-testid="stToolbar"] {
-    #     visibility: hidden;
-    # }
+    header[data-testid="stHeader"] [data-testid="stToolbar"] {
+        visibility: hidden;
+    }
     #MainMenu {
         visibility: hidden;
     }
