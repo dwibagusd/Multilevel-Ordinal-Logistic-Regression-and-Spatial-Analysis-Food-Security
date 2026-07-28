@@ -30,9 +30,9 @@ st.markdown("""
     /* Header TIDAK disembunyikan (visibility/height) agar tombol toggle 
        sidebar default (posisi & perilakunya) tetap utuh, hanya dibuat 
        transparan supaya tidak ada bar putih/garis yang mengganggu */
-    header[data-testid="stHeader"] {
-        background: transparent;
-    }
+    # header[data-testid="stHeader"] {
+    #     background: transparent;
+    # }
 
     /* 1. Mengatur Kontainer Utama agar Lebar Penuh di SEMUA  */
     .block-container {
