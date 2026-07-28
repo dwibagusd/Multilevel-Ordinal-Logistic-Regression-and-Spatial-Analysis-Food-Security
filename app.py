@@ -17,15 +17,15 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 st.markdown("""
 <style>
     /* Sembunyikan HANYA toolbar kanan (menu, GitHub, Share, Deploy) */
-    header[data-testid="stHeader"] [data-testid="stToolbar"] {
-        visibility: hidden;
-    }
-    #MainMenu {
-        visibility: hidden;
-    }
-    footer {
-        visibility: hidden;
-    }
+    # header[data-testid="stHeader"] [data-testid="stToolbar"] {
+    #     visibility: hidden;
+    # }
+    # #MainMenu {
+    #     visibility: hidden;
+    # }
+    # footer {
+    #     visibility: hidden;
+    # }
 
     /* Header TIDAK disembunyikan (visibility/height) agar tombol toggle 
        sidebar default (posisi & perilakunya) tetap utuh, hanya dibuat 
