@@ -16,23 +16,20 @@ warnings.filterwarnings("ignore", category=UserWarning, message="The weights mat
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
-    /* Sembunyikan HANYA toolbar kanan (menu, GitHub, Share, Deploy) */
-    # header[data-testid="stHeader"] [data-testid="stToolbar"] {
-    #     visibility: hidden;
-    # }
-    # #MainMenu {
-    #     visibility: hidden;
-    # }
-    # footer {
-    #     visibility: hidden;
-    # }
-
-    /* Header TIDAK disembunyikan (visibility/height) agar tombol toggle 
-       sidebar default (posisi & perilakunya) tetap utuh, hanya dibuat 
-       transparan supaya tidak ada bar putih/garis yang mengganggu */
-    # header[data-testid="stHeader"] {
-    #     background: transparent;
-    # }
+    /* Sembunyikan HANYA 3 elemen spesifik ini — tidak menyentuh header sama sekali,
+       jadi tombol toggle sidebar (>>) tetap utuh & berfungsi normal */
+    [data-testid="stToolbarActions"] {
+        visibility: hidden;
+    }
+    [data-testid="stAppDeployButton"] {
+        visibility: hidden;
+    }
+    [data-testid="stMainMenu"] {
+        visibility: hidden;
+    }
+    footer {
+        visibility: hidden;
+    }
 
     /* 1. Mengatur Kontainer Utama agar Lebar Penuh di SEMUA  */
     .block-container {
