@@ -30,6 +30,9 @@ st.markdown("""
     footer {
         visibility: hidden;
     }
+    header[data-testid="stHeader"] {
+        background: transparent;
+    }
 
     /* 1. Mengatur Kontainer Utama agar Lebar Penuh di SEMUA  */
     .block-container {
